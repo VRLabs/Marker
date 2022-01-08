@@ -32,7 +32,7 @@
 
 ## Install guide
 
-https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Setup.mp4
+https://user-images.githubusercontent.com/45078979/148662754-c6b64c0f-690f-495f-b012-f7da803c393e.mp4
 
 Drag the Marker.cs script onto your avatar. You can customize settings for installing the marker. Some settings have tooltips for explanation.
 
