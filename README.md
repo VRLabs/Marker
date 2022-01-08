@@ -27,7 +27,6 @@
   <br />
     <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Large.jpeg" width="100%">
   <br />
-  <br />
 </div>
 
 ## Credit
