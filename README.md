@@ -29,6 +29,10 @@
 
 ## Install guide
 
+
+https://user-images.githubusercontent.com/45078979/148662198-af40d074-58f1-457a-9d58-fda9e5b49a1c.mp4
+
+
 Drag the Marker.cs script onto your avatar. You can customize settings for installing the marker. Some settings have tooltips for explanation.
 
 After generating the marker, the ink and eraser emit from MarkerTarget.
