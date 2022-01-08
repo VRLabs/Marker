@@ -25,13 +25,14 @@
   </a>
   <br />
   <br />
+    <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Large.jpeg" width="100%">
+  <br />
+  <br />
 </div>
 
 ## Install guide
 
-
-https://user-images.githubusercontent.com/45078979/148662198-af40d074-58f1-457a-9d58-fda9e5b49a1c.mp4
-
+https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Setup.mp4
 
 Drag the Marker.cs script onto your avatar. You can customize settings for installing the marker. Some settings have tooltips for explanation.
 
