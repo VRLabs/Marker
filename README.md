@@ -29,10 +29,6 @@
   <br />
 </div>
 
-## Credit
-
-[ksivl](https://github.com/ksivl)
-
 ## Install guide
 
 https://user-images.githubusercontent.com/45078979/148662754-c6b64c0f-690f-495f-b012-f7da803c393e.mp4
@@ -46,6 +42,10 @@ Adjust the MarkerTarget transform by entering playmode with the emulator and ena
 When finished adjusting MarkerTarget, copy its transform component to paste its values outside of playmode.
 
 Click "Finish Setup" to finalize your marker and remove the script from your avatar.
+
+## Credit
+
+[ksivl](https://github.com/ksivl)
 
 ## Downloads
 
