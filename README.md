@@ -53,7 +53,7 @@ You can grab the latest version of the Marker in [Releases](https://github.com/V
 
 ## License
 
-Marker is available as-is under MIT. For more information see [LICENSE](https://github.com/VRLabs/Marker/blob/dev/LICENSE).
+Marker is available as-is under MIT. For more information see [LICENSE](https://github.com/VRLabs/Marker/blob/main/LICENSE).
 
 ## Contact us
 
