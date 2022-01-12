@@ -25,7 +25,7 @@
   </a>
   <br />
   <br />
-    <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Large.jpeg" width="100%">
+    <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
   <br />
 </div>
 
