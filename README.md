@@ -7,7 +7,7 @@
   <a href="https://github.com/VRLabs/Marker/releases/latest">
     <img src="https://img.shields.io/github/v/release/VRLabs/Marker.svg?style=flat-square">
   </a>
-  <a href="https://github.com/VRLabs/Marker/releases/latest">
+  <a href="https://github.com/VRLabs/Marker">
     <img src="https://img.shields.io/badge/Unity-2019.4-green.svg?style=flat-square">
   </a>
   <br />
