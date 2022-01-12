@@ -12,7 +12,9 @@
   </a>
   <br />
   <br />
+  <div>
     <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
+  </div>  
   <br />
 </div>
 
