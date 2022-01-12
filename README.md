@@ -11,19 +11,6 @@
     <img src="https://img.shields.io/badge/Unity-2019.4-green.svg?style=flat-square">
   </a>
   <br />
-  <a href="https://github.com/VRLabs/Marker/issues">
-    <img src="https://img.shields.io/github/issues-raw/VRLabs/Marker.svg?style=flat-square">
-  </a>
-  <a href="https://github.com/VRLabs/Marker/issues?q=is%3Aissue+is%3Aclosed">
-    <img src="https://img.shields.io/github/issues-closed-raw/VRLabs/Marker.svg?style=flat-square">
-  </a>
-  <a href="https://github.com/VRLabs/Marker/pull">
-    <img src="https://img.shields.io/github/issues-pr-raw/VRLabs/Marker.svg?style=flat-square">
-  </a>
-  <a href="https://github.com/VRLabs/Marker/pulls?q=is%3Apr+is%3Aclosed">
-    <img src="https://img.shields.io/github/issues-pr-closed-raw/VRLabs/Marker.svg?style=flat-square">
-  </a>
-  <br />
   <br />
     <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
   <br />
