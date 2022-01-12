@@ -11,10 +11,14 @@
     <img src="https://img.shields.io/badge/Unity-2019.4-green.svg?style=flat-square">
   </a>
   <br />
-  <div>
+  <div class="main-image">
     <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
   </div>  
 </div>
+
+## How it works
+
+The "Draw" particle system emits particles for drawing. The "Eraser" collider kills the particles. Particles are emitted in a custom simulation space so the drawing can be manipulated.
 
 ## Install guide
 
