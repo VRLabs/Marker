@@ -1,19 +1,14 @@
-<div>
-  <h1>Marker</h1>
-  <p>
-     A marker for drawing.
-  </p>
+# Marker
 
-  <a href="https://github.com/VRLabs/Marker/releases/latest">
-    <img src="https://img.shields.io/github/v/release/VRLabs/Marker.svg?style=flat-square">
-  </a>
-  <a href="https://github.com/VRLabs/Marker">
-    <img src="https://img.shields.io/badge/Unity-2019.4-green.svg?style=flat-square">
-  </a>
-  <br />
-  <div>
-    <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
-  </div>  
+[![Generic badge](https://img.shields.io/badge/Version-1.0-orange.svg)](https://github.com/VRLabs/Marker/releases/latest)
+[![Generic badge](https://img.shields.io/badge/Unity-2019.4.31f1-informational.svg)](https://unity3d.com/unity/whats-new/2019.4.31)
+[![Generic badge](https://img.shields.io/badge/SDK-AvatarSDK3-informational.svg)](https://vrchat.com/home/download)
+[![Generic badge](https://img.shields.io/badge/License-MIT-informational.svg)](https://github.com/VRLabs/Marker/blob/main/LICENSE)  
+
+A marker for drawing.
+
+<div>
+  <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
 </div>
 
 ## How it works
