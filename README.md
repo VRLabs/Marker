@@ -9,6 +9,7 @@ A marker for drawing.
 
 <div>
   <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
+  <br/>
 </div>
 
 ## How it works
