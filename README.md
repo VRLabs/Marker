@@ -1,6 +1,6 @@
 # Marker
 
-[![Generic badge](https://img.shields.io/badge/Version-1.0-orange.svg)](https://github.com/VRLabs/Marker/releases/latest)
+[![Generic badge](https://img.shields.io/badge/Version-1.1-orange.svg)](https://github.com/VRLabs/Marker/releases/latest)
 [![Generic badge](https://img.shields.io/badge/Unity-2019.4.31f1-informational.svg)](https://unity3d.com/unity/whats-new/2019.4.31)
 [![Generic badge](https://img.shields.io/badge/SDK-AvatarSDK3-informational.svg)](https://vrchat.com/home/download)
 [![Generic badge](https://img.shields.io/badge/License-MIT-informational.svg)](https://github.com/VRLabs/Marker/blob/main/LICENSE)  
