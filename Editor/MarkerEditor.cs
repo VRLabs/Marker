@@ -622,9 +622,9 @@ namespace VRLabs.Marker
 				warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, or create an avatar descriptor here.");
 			else
 			{
-				if (descriptor.expressionParameters != null && descriptor.expressionParameters.CalcTotalCost() > (128 - bitCount))
+				if (descriptor.expressionParameters != null && descriptor.expressionParameters.CalcTotalCost() > (256 - bitCount))
 				{
-					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. You need " + (128 - bitCount) + " or less bits of parameter memory utilized.");
+					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. You need " + (256 - bitCount) + " or less bits of parameter memory utilized.");
 				}
 				if (descriptor.expressionsMenu != null)
 				{
