@@ -26,9 +26,6 @@ namespace VRLabs.Marker
 		public int localSpaceFullBody, gestureToDraw;
 
 		private bool isWdAutoSet;
-		private readonly string path_defaultGesture = "Assets/VRCSDK/Examples3/Animation/Controllers/vrc_AvatarV3HandsLayer.controller";
-		private readonly string path_defaultMaskL = "Assets/VRCSDK/Examples3/Animation/Masks/vrc_Hand Left.mask";
-		private readonly string path_defaultMaskR = "Assets/VRCSDK/Examples3/Animation/Masks/vrc_Hand Right.mask";
 		private readonly ScriptFunctions.PlayableLayer[] playablesUsed = { ScriptFunctions.PlayableLayer.Gesture, ScriptFunctions.PlayableLayer.FX };
 		const float KSIVL_UNIT = 0.4156029f;
 
@@ -54,6 +51,7 @@ namespace VRLabs.Marker
 			GUIStyle boxStyle = new GUIStyle("box") { stretchWidth = true };
 			boxStyle.normal.textColor = new GUIStyle("label").normal.textColor;
 			GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, richText = true };
+			GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Bold };
 
 			GUILayout.Space(8);
 			EditorGUILayout.BeginHorizontal(boxStyle);
@@ -119,7 +117,8 @@ namespace VRLabs.Marker
 
 				GetBitCount();
 				EditorGUILayout.LabelField("Parameter memory bits needed: " + bitCount);
-
+				
+				// WD warning - separately handled since installation should still be allowed
 				if (descriptor != null)
                 {
 					ScriptFunctions.WriteDefaults wdSetting = descriptor.HasMixedWriteDefaults();
@@ -134,9 +133,8 @@ namespace VRLabs.Marker
 					}
                 }
 
+				// "Generate" button
 				CheckRequirements();
-
-				GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Bold };
 				if (warnings.Count == 0)
 				{
 					if (GUILayout.Button("Generate Marker", buttonStyle))
@@ -152,22 +150,6 @@ namespace VRLabs.Marker
 							EditorUtility.DisplayDialog("Error Generating Marker", "Sorry, an error occured generating the Marker. Please take a snapshot of this code monkey information and send it to ksivl#4278 so it can be resolved.\n=================================================\n" + e.Message + "\n" + e.Source + "\n" + e.StackTrace, "OK");
 						};
 					}
-					if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
-					{
-						if (GUILayout.Button("Remove Marker", buttonStyle))
-						{
-							if (EditorUtility.DisplayDialog("Remove Marker", "Uninstall the VRLabs Marker from the avatar?", "Yes", "No"))
-							{
-								Uninstall();
-							}
-						}
-					}
-                    else
-                    {
-						GUI.enabled = false;
-						GUILayout.Button("Remove Marker", buttonStyle);
-						GUI.enabled = true;
-					}
 				}
 				else
 				{
@@ -177,10 +159,29 @@ namespace VRLabs.Marker
 					}
 					GUI.enabled = false;
 					GUILayout.Button("Generate Marker", buttonStyle);
+					GUI.enabled = true;
+				}
+
+				// "Remove" button
+				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
+				{
+					if (GUILayout.Button("Remove Marker", buttonStyle))
+					{
+						if (EditorUtility.DisplayDialog("Remove Marker", "Uninstall the VRLabs Marker from the avatar?", "Yes", "No"))
+						{
+							Uninstall();
+							Debug.Log("Successfully removed Marker.");
+						}
+					}
+				}
+				else
+				{
+					GUI.enabled = false;
 					GUILayout.Button("Remove Marker", buttonStyle);
 					GUI.enabled = true;
 				}
 			}
+			// Once script is run
 			else if (((Marker)target).finished == true)
 			{
 				GUILayout.Space(8);
@@ -198,7 +199,6 @@ namespace VRLabs.Marker
 
 				GUILayout.Space(8);
 
-				GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Bold };
 				if (EditorApplication.isPlaying)
 				{
 					GUI.enabled = false;
@@ -231,7 +231,8 @@ namespace VRLabs.Marker
 			{
 				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
 				{
-					if ((descriptor.baseAnimationLayers[4].animatorController is AnimatorController controller) && (controller != null))
+					if ((descriptor.baseAnimationLayers.Length >= 5) && (descriptor.baseAnimationLayers[4].animatorController is AnimatorController controller) && (controller != null))
+					// 1st cond: must have all 5 humanoid layers in descriptor
 					{
 						leftHanded = controller.HasLayer("M_Marker L");
 						brushSize = controller.HasLayer("M_Size");
@@ -271,15 +272,21 @@ namespace VRLabs.Marker
 			ScriptFunctions.UninstallControllerByPrefix(descriptor, "M_", ScriptFunctions.PlayableLayer.Gesture);
 			ScriptFunctions.UninstallParametersByPrefix(descriptor, "M_");
 			ScriptFunctions.UninstallMenu(descriptor, "Marker");
-			Transform foundMarker = descriptor.transform.Find("Marker");
-			if (foundMarker != null)
-				DestroyImmediate(foundMarker.gameObject);
-			HumanBodyBones[] bonesToSearch = { HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftIndexDistal, HumanBodyBones.RightIndexDistal };
-			for (int i = 0; i < bonesToSearch.Length; i++)
+			if (descriptor != null)
             {
-				GameObject foundTarget = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget");
-				if (foundTarget != null)
-					DestroyImmediate(foundTarget);
+				Transform foundMarker = descriptor.transform.Find("Marker");
+				if (foundMarker != null)
+					DestroyImmediate(foundMarker.gameObject);
+				if (avatar.isHuman)
+                {
+					HumanBodyBones[] bonesToSearch = { HumanBodyBones.LeftHand, HumanBodyBones.RightHand };
+					for (int i = 0; i < bonesToSearch.Length; i++)
+					{
+						GameObject foundTarget = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget", true);
+						if (foundTarget != null)
+							DestroyImmediate(foundTarget);
+					}
+				}
 			}
 		}
 
@@ -364,7 +371,7 @@ namespace VRLabs.Marker
 
 			if (descriptor.baseAnimationLayers[2].isDefault == true || descriptor.baseAnimationLayers[2].animatorController == null)
 			{
-				AssetDatabase.CopyAsset(path_defaultGesture, directory + "Gesture.controller");
+				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller", directory + "Gesture.controller");
 				AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(directory + "Gesture.controller", typeof(AnimatorController)) as AnimatorController;
 
 				descriptor.customExpressions = true;
@@ -614,7 +621,6 @@ namespace VRLabs.Marker
 		private void CheckRequirements()
 		{
 			warnings.Clear();
-
 			if (!AssetDatabase.IsValidFolder("Assets/VRLabs/Marker"))
 				warnings.Add("The folder at path 'Assets/VRLabs/Marker' could not be found. Make sure you are importing a Unity package and not moving the folder.");
 
@@ -622,9 +628,9 @@ namespace VRLabs.Marker
 				warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, or create an avatar descriptor here.");
 			else
 			{
-				if (descriptor.expressionParameters != null && descriptor.expressionParameters.CalcTotalCost() > (128 - bitCount))
+				if (descriptor.expressionParameters != null && descriptor.expressionParameters.CalcTotalCost() > (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount))
 				{
-					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. You need " + (128 - bitCount) + " or less bits of parameter memory utilized.");
+					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. You need " + (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount) + " or less bits of parameter memory utilized.");
 				}
 				if (descriptor.expressionsMenu != null)
 				{
@@ -633,37 +639,7 @@ namespace VRLabs.Marker
 						warnings.Add("Your avatar's topmost menu is full. Please have at least one empty control slot available.");
 					}
 				}
-
-				if (AssetDatabase.LoadAssetAtPath(path_defaultGesture, typeof(AnimatorController)) as AnimatorController == null)
-				{
-					warnings.Add("VRCSDK Gesture controller at path '" + path_defaultGesture + "' could not be found. Please place the default Gesture controller there.");
-				}
-				if (AssetDatabase.LoadAssetAtPath(path_defaultMaskL, typeof(AvatarMask)) as AvatarMask == null)
-				{
-					warnings.Add("VRCSDK default avatar mask for the left hand at path '" + path_defaultMaskL + "' could not be found. Please place the default left hand mask there.");
-				}
-				if (AssetDatabase.LoadAssetAtPath(path_defaultMaskR, typeof(AvatarMask)) as AvatarMask == null)
-				{
-					warnings.Add("VRCSDK default avatar mask for the right hand at path '" + path_defaultMaskR + "' could not be found. Please place the default right hand mask there.");
-				}
-
-				if (!descriptor.baseAnimationLayers[2].isDefault) // check gesture layer validity
-				{
-					if (descriptor.baseAnimationLayers[2].animatorController != null && descriptor.baseAnimationLayers[2].animatorController.name != "")
-					{
-                        if (descriptor.baseAnimationLayers[2].animatorController is AnimatorController gesture)
-                        {
-                            if (gesture.layers[0].avatarMask == null || gesture.layers[0].avatarMask.name == "")
-                            {
-                                warnings.Add("The first layer of your avatar's gesture layer is missing a mask. Try setting a mask, or using a copy of the VRCSDK gesture controller, or removing the controller from your avatar descriptor.");
-                            }
-                        }
-                        else
-                        {
-                            warnings.Add("The gesture layer on this avatar is not an animator controller.");
-                        }
-                    }
-				}
+				
 				if (avatar == null)
 				{
 					warnings.Add("There is no Animator on this avatar. Please add an Animator component on your avatar.");
@@ -680,6 +656,29 @@ namespace VRLabs.Marker
 					}
 					else
 					{
+						// check avatar is humanoid and layers are valid
+						if (descriptor.baseAnimationLayers.Length < 5) // check all humanoid layers exist (since they can disappear when avatar rig is set human -> generic -> human)
+						{
+							warnings.Add("You are missing the humanoid playable layers in your avatar descriptor. Try clicking 'Reset to Default' in your avatar descriptor.");
+						}
+						else if (!descriptor.baseAnimationLayers[2].isDefault) // check gesture layer validity
+						{
+							if (descriptor.baseAnimationLayers[2].animatorController != null && descriptor.baseAnimationLayers[2].animatorController.name != "")
+							{
+								if (descriptor.baseAnimationLayers[2].animatorController is AnimatorController gesture)
+								{
+									if (gesture.layers[0].avatarMask == null || gesture.layers[0].avatarMask.name == "")
+									{
+										warnings.Add("The first layer of your avatar's gesture layer is missing a mask. Try setting a mask, or using a copy of the VRCSDK gesture controller, or removing the controller from your avatar descriptor.");
+									}
+								}
+								else
+								{
+									warnings.Add("The gesture layer on this avatar is not an animator controller.");
+								}
+							}
+						}
+						// check bones are mapped
 						if (useIndexFinger && ((avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal) == null)))
 						{
 							warnings.Add("Your avatar rig's left and/or right index finger's distal bone is unmapped!");
