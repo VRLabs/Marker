@@ -283,9 +283,9 @@ namespace VRLabs.Marker
         public static void UninstallControllerByPrefix(VRCAvatarDescriptor descriptor, string prefix, PlayableLayer playable)
         {
             int layer = (int)playable;
-            if (descriptor == null)
+            if (descriptor == null || descriptor.baseAnimationLayers.Length < 5) // 2nd cond: must have all 5 humanoid layers in descriptor
             {
-                Debug.LogError("The avatar descriptor is null.");
+                //Debug.LogError("The avatar descriptor is null.");
                 return;
             }
             if (string.IsNullOrEmpty(prefix))
@@ -314,7 +314,7 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                Debug.LogError("The avatar descriptor is null!");
+                //Debug.LogError("The avatar descriptor is null.");
                 return;
             }
             if (descriptor.expressionParameters != null)
@@ -337,7 +337,7 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                Debug.LogError("The avatar descriptor is null!");
+                //Debug.LogError("The avatar descriptor is null.");
                 return;
             }
             if (descriptor.expressionsMenu != null)
@@ -363,24 +363,31 @@ namespace VRLabs.Marker
         /// <returns>True if any elements of a previous install are detected, false otherwise.</returns>
         public static bool HasPreviousInstall(VRCAvatarDescriptor descriptor, string gameObject, PlayableLayer[] playables, string prefix, string menu = null, bool isPrefixCaseSensitive = true)
         {
+            if (descriptor == null)
+            {
+                //Debug.LogError("The avatar descriptor is null.");
+                return false;
+            }
             if (descriptor.transform.Find(gameObject) != null)
                 return true;
-            int[] layers = new int[playables.Length];
-            for (int i = 0; i < playables.Length; i++)
+            if (descriptor.baseAnimationLayers.Length >= 5) // must have all 5 humanoid layers in descriptor
             {
-                layers[i] = (int)playables[i];
-                if (!(descriptor.baseAnimationLayers[layers[i]].animatorController is AnimatorController controller) || controller == null) continue;
+                for (int i = 0; i < playables.Length; i++)
+                {
+                    if (!(descriptor.baseAnimationLayers[(int)playables[i]].animatorController is AnimatorController controller) || controller == null) continue;
 
-                if (!isPrefixCaseSensitive)
-                {
-                    prefix = prefix.ToLower();
-                    if (controller.layers.Select(x => x.name).Any(x => x.ToLower().StartsWith(prefix)))
-                        return true;
-                }
-                else
-                {
-                    if (controller.layers.Select(x => x.name).Any(x => x.StartsWith(prefix)))
-                        return true;
+                    if (!isPrefixCaseSensitive)
+                    {
+                        prefix = prefix.ToLower();
+                        if (controller.layers.Select(x => x.name).Any(x => x.ToLower().StartsWith(prefix)))
+                            return true;
+                    }
+                    else
+                    {
+                        if (controller.layers.Select(x => x.name).Any(x => x.StartsWith(prefix)))
+                            return true;
+                    }
+
                 }
             }
             if ((descriptor.expressionsMenu != null) && (menu != null))
