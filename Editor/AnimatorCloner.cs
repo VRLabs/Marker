@@ -289,7 +289,6 @@ namespace VRLabs.Marker
                 case VRCAvatarParameterDriver l:
                     {
                         var d = old as VRCAvatarParameterDriver;
-                        l.ApplySettings = d.ApplySettings;
                         l.debugString = d.debugString;
                         l.localOnly = d.localOnly;
                         l.parameters = d.parameters.ConvertAll(p =>
