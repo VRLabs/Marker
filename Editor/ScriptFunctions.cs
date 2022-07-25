@@ -18,6 +18,7 @@ namespace VRLabs.Marker
     public static class ScriptFunctions
     {
         private const string DEFAULT_DIRECTORY = "Assets/VRLabs/GeneratedAssets/";
+        // ideally do not use these default paths; manage it from script's end by providing own copy of default animator.
         public static readonly string[] _defaultLayerPath =
         {
             "Assets/VRCSDK/Examples3/Animation/Controllers/vrc_AvatarV3LocomotionLayer.controller",
@@ -31,6 +32,7 @@ namespace VRLabs.Marker
         {
             "IsLocal",
             "Viseme",
+            "Voice",
             "GestureLeft",
             "GestureRight",
             "GestureLeftWeight",
@@ -48,7 +50,9 @@ namespace VRLabs.Marker
             "MuteSelf",
             "InStation",
             "Supine",
-            "GroundProximity"
+            "GroundProximity",
+            //VRLabs defaults
+            "IsMirror"
         };
 
         public enum PlayableLayer // for function MergeController
@@ -58,13 +62,6 @@ namespace VRLabs.Marker
             Gesture = 2,
             Action = 3,
             FX = 4
-        }
-
-        public enum WriteDefaults
-        {
-            Mixed = -1,
-            Off = 0,
-            On = 1
         }
 
         /// <summary>
@@ -280,7 +277,8 @@ namespace VRLabs.Marker
         /// <param name="descriptor">The avatar descriptor to uninstall by prefix from.</param>
         /// <param name="prefix">If a layer or parameter's name begins with <c>prefix</c>, the layer or parameter will be removed.</param>
         /// <param name="playable">The playable layer to uninstall by prefix from.</param>
-        public static void UninstallControllerByPrefix(VRCAvatarDescriptor descriptor, string prefix, PlayableLayer playable)
+        /// <param name="isPrefixCaseSensitive">-BACKWARDS COMPATABILITY- Is the <c>prefix</c> case sensitive or not?</param>
+        public static void UninstallControllerByPrefix(VRCAvatarDescriptor descriptor, string prefix, PlayableLayer playable, bool isPrefixCaseSensitive = true)
         {
             int layer = (int)playable;
             if (descriptor == null || descriptor.baseAnimationLayers.Length < 5) // 2nd cond: must have all 5 humanoid layers in descriptor
@@ -295,9 +293,20 @@ namespace VRLabs.Marker
             }
             if (!(descriptor.baseAnimationLayers[layer].animatorController is AnimatorController controllerOriginal) || controllerOriginal == null) return;
 
-            AnimatorControllerLayer[] filteredLayers = controllerOriginal.layers.Where(x => !x.name.StartsWith(prefix)).ToArray();
+            AnimatorControllerLayer[] filteredLayers;
+            AnimatorControllerParameter[] filteredParameters;
+            if (!isPrefixCaseSensitive)
+            {
+                prefix = prefix.ToLower();
+                filteredLayers = controllerOriginal.layers.Where(x => !x.name.ToLower().StartsWith(prefix)).ToArray();
+                filteredParameters = controllerOriginal.parameters.Where(x => !x.name.ToLower().StartsWith(prefix) || _vrcDefaultParameters.Contains(x.name)).ToArray();
+            }
+            else
+            {
+                filteredLayers = controllerOriginal.layers.Where(x => !x.name.StartsWith(prefix)).ToArray();
+                filteredParameters = controllerOriginal.parameters.Where(x => !x.name.StartsWith(prefix) || _vrcDefaultParameters.Contains(x.name)).ToArray();
+            }
             controllerOriginal.layers = filteredLayers;
-            AnimatorControllerParameter[] filteredParameters = controllerOriginal.parameters.Where(x => !x.name.StartsWith(prefix) || _vrcDefaultParameters.Contains(x.name)).ToArray();
             controllerOriginal.parameters = filteredParameters;
 
             EditorUtility.SetDirty(controllerOriginal);
@@ -531,39 +540,104 @@ namespace VRLabs.Marker
                 }
             }
         }
+
         /// <summary>
         /// Checks if the avatar descriptor has mixing "Write defaults" settings across its animators.
         /// </summary>
         /// <param name="descriptor">Avatar descriptor to check.</param>
         /// <returns>True if the avatar animators contain mixed write defaults, false otherwise.</returns>
-        public static WriteDefaults HasMixedWriteDefaults(this VRCAvatarDescriptor descriptor)
+        public static List<WDState> AnalyzeWDState(this VRCAvatarDescriptor descriptor)
         {
-            bool isOn = false;
-            bool checkedFirst = false;
-            bool isMixed;
+            var states = new List<WDState>();
             foreach (var layer in descriptor.baseAnimationLayers)
             {
                 if (!(layer.animatorController is AnimatorController controller) || controller == null) continue;
                 foreach (var animationLayer in controller.layers)
-                {
-                    (checkedFirst, isOn, isMixed) = GetWdInStateMachine(animationLayer.stateMachine, checkedFirst, isOn);
-                    if (isMixed)
-                        return WriteDefaults.Mixed;
-                }
+                    AnalyzeWdStateMachine(animationLayer.stateMachine, states, layer.type.ToString());
+
             }
             foreach (var layer in descriptor.specialAnimationLayers)
             {
                 if (!(layer.animatorController is AnimatorController controller)) continue;
                 foreach (var animationLayer in controller.layers)
-                {
-                    (checkedFirst, isOn, isMixed) = GetWdInStateMachine(animationLayer.stateMachine, checkedFirst, isOn);
-                    if (isMixed)
-                        return WriteDefaults.Mixed;
-                }
+                    AnalyzeWdStateMachine(animationLayer.stateMachine, states, layer.type.ToString());
             }
-            return isOn ? WriteDefaults.On : WriteDefaults.Off;
+
+            return states;
         }
 
+        private static void AnalyzeWdStateMachine(AnimatorStateMachine stateMachine, List<WDState> states, string layerName)
+        {
+            foreach (ChildAnimatorState t in stateMachine.states)
+            {
+                states.Add(new WDState
+                {
+                    AvatarLayer = layerName,
+                    StateName = t.state.name,
+                    IsOn = t.state.writeDefaultValues,
+                    HasDefault = t.state.name.Contains("(WD On)") || t.state.name.Contains("(WD Off)"),
+                    IsDefaultOn = t.state.name.Contains("(WD On)"),
+                    HasMotion = t.state.motion != null
+                });
+            }
+
+            foreach (ChildAnimatorStateMachine t in stateMachine.stateMachines)
+                AnalyzeWdStateMachine(t.stateMachine, states, layerName);
+        }
+
+        /// <summary>
+        /// Checks if the avatar descriptor has mixing "Write defaults" settings across its animators.
+        /// </summary>
+        /// <param name="states">States to check.</param>
+        /// <param name="isOn">Returns true if WD are on, false if WD are off. NOTE if WD are mixed, this value is meaningless. (</param>
+        /// <returns>True if the avatar animators contain mixed write defaults, false otherwise.</returns>
+        public static bool HaveMixedWriteDefaults(this IEnumerable<WDState> states, out bool isOn)
+        {
+            isOn = false;
+            bool checkedFirst = false;
+            foreach (var state in states)
+            {
+                if (state.HasDefault)
+                {
+                    if (state.IsOn ^ state.IsDefaultOn)
+                        return true;
+                    continue;
+                }
+
+                if (!checkedFirst)
+                {
+                    checkedFirst = true;
+                    isOn = state.IsOn;
+                    continue;
+                }
+
+                if (state.IsOn != isOn)
+                    return true;
+            }
+
+            return false;
+        }
+        public static bool HaveMixedWriteDefaults(this IEnumerable<WDState> states)
+        {
+            return HaveMixedWriteDefaults(states, out _);
+        }
+
+        /// <summary>
+        /// Checks if the avatar descriptor has any empty motions in its states.
+        /// </summary>
+        /// <param name="states">States to check.</param>
+        /// <returns>True if any avatar states contain empty motions, false otherwise.</returns>
+        public static bool HaveEmpyMotionsInStates(this IEnumerable<WDState> states)
+        {
+            foreach (var state in states)
+                if (!state.HasMotion)
+                    return true;
+
+            return false;
+        }
+
+
+        // ReSharper disable Unity.PerformanceAnalysis
         /// <summary>
         /// Sets the "Write Defaults" value of all the states in an entire animator controller to true or false.
         /// Will modify the controller directly.
@@ -571,7 +645,7 @@ namespace VRLabs.Marker
         /// <param name="controller">The controller to modify.</param>
         /// <param name="writeDefaults">The value of "Write Defaults" to set the controller's states to. True if unspecified.</param>
         /// <returns></returns>
-        public static void SetWriteDefaults(AnimatorController controller, bool writeDefaults = true)
+        public static void SetWriteDefaults(AnimatorController controller, bool writeDefaults = true, bool force = false)
         {
             if (controller == null)
             {
@@ -580,21 +654,60 @@ namespace VRLabs.Marker
             }
             for (int i = 0; i < controller.layers.Length; i++)
             {
-                SetWriteDefaultsRecursive(controller.layers[i].stateMachine, writeDefaults);
+                SetInStateMachine(controller.layers[i].stateMachine, writeDefaults, force);
             }
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
-        private static void SetWriteDefaultsRecursive(AnimatorStateMachine stateMachine, bool wd)
-        {
-            foreach (ChildAnimatorState t in stateMachine.states)
-                t.state.writeDefaultValues = wd;
 
-            foreach (ChildAnimatorStateMachine t in stateMachine.stateMachines)
-                SetWriteDefaultsRecursive(t.stateMachine, wd);
+        /// <summary>
+        /// Get all states of an animator controller.
+        /// </summary>
+        /// <param name="controller">Controller used.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="AnimatorState"/> contained in the given controller.</returns>
+        public static IEnumerable<AnimatorState> GetAnimatorStates(this AnimatorController controller)
+        {
+            var animatorStates = new List<AnimatorState>();
+            foreach (var animationLayer in controller.layers)
+                animatorStates.AddRange(GetLayerStatesRecursive(animationLayer.stateMachine));
+
+            return animatorStates;
         }
-        private static (bool, bool, bool) GetWdInStateMachine (AnimatorStateMachine stateMachine, bool checkedFirst, bool isOn)
+
+        /// <summary>
+        /// Get all states of an animator layer
+        /// </summary>
+        /// <param name="layer">Layer used.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="AnimatorState"/> contained in the given layer.</returns>
+        public static IEnumerable<AnimatorState> GetLayerStates(this AnimatorControllerLayer layer)
+        {
+            return GetLayerStatesRecursive(layer.stateMachine);
+        }
+        private static IEnumerable<AnimatorState> GetLayerStatesRecursive(AnimatorStateMachine stateMachine)
+        {
+            var animatorStates = stateMachine.states
+                .Select(t => t.state)
+                .ToList();
+            foreach (ChildAnimatorStateMachine t in stateMachine.stateMachines)
+                animatorStates.AddRange(GetLayerStatesRecursive(t.stateMachine));
+
+            return animatorStates;
+        }
+
+        /// <summary>
+        /// Return the VRC ValueType value based on the type of the animator parameter given.
+        /// </summary>
+        /// <param name="type">Animator parameter type.</param>
+        /// <returns>VRC SDK3 ValueType that corresponds to the given animator ValueType.</returns>
+        public static ValueType GetValueTypeFromAnimatorParameterType(AnimatorControllerParameterType type)
+        {
+            return type == AnimatorControllerParameterType.Int
+                ? ValueType.Int
+                : (type == AnimatorControllerParameterType.Bool ? ValueType.Bool : ValueType.Float);
+        }
+
+        private static (bool, bool, bool) GetWdInStateMachine(AnimatorStateMachine stateMachine, bool checkedFirst, bool isOn)
         {
             foreach (ChildAnimatorState t in stateMachine.states)
             {
@@ -602,6 +715,13 @@ namespace VRLabs.Marker
                 {
                     isOn = t.state.writeDefaultValues;
                     checkedFirst = true;
+                    continue;
+                }
+
+                if (t.state.name.Contains("(WD On)") || t.state.name.Contains("(WD Off)"))
+                {
+                    if (t.state.writeDefaultValues ^ t.state.name.Contains("(WD On)"))
+                        return (true, isOn, true);
                     continue;
                 }
                 if (isOn != t.state.writeDefaultValues)
@@ -612,13 +732,45 @@ namespace VRLabs.Marker
             foreach (ChildAnimatorStateMachine t in stateMachine.stateMachines)
             {
                 (checkedFirst, isOn, isMixed) = GetWdInStateMachine(t.stateMachine, checkedFirst, isOn);
-                if(isMixed)
+                if (isMixed)
                     return (checkedFirst, isOn, true);
             }
 
             return (checkedFirst, isOn, false);
         }
 
+        private static void SetInStateMachine(AnimatorStateMachine stateMachine, bool wd, bool force)
+        {
+            foreach (ChildAnimatorState t in stateMachine.states)
+            {
+                t.state.writeDefaultValues = wd;
+                // Force corresponding Write Defaults setting for states with "(WD On)" or "(WD Off)" tags
+                if (!force && t.state.name.Contains("(WD On)"))
+                    t.state.writeDefaultValues = true;
+                else if (!force && t.state.name.Contains("(WD Off)"))
+                    t.state.writeDefaultValues = false;
+                else
+                    t.state.writeDefaultValues = wd;
+
+                //if (t.state.motion == null)
+                    //t.state.motion = EmptyClip;
+
+            }
+
+            foreach (ChildAnimatorStateMachine t in stateMachine.stateMachines)
+                SetInStateMachine(t.stateMachine, wd, force);
+        }
+
+    }
+    // ReSharper disable once InconsistentNaming
+    public struct WDState
+    {
+        public string AvatarLayer { get; set; }
+        public string StateName { get; set; }
+        public bool IsOn { get; set; }
+        public bool HasDefault { get; set; }
+        public bool IsDefaultOn { get; set; }
+        public bool HasMotion { get; set; }
     }
 }
 #endif

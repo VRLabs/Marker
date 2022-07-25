@@ -9,7 +9,7 @@ namespace VRLabs.Marker
 	[ExecuteAlways]
 	public class Marker : MonoBehaviour
 	{	// data storage
-		public bool leftHanded, writeDefaults, eraserSize, useIndexFinger;
+		public bool leftHanded, wdSetting, eraserSize, useIndexFinger;
 		public bool brushSize = true, localSpace = true;
 		public int localSpaceFullBody;
 		public int gestureToDraw = 3;

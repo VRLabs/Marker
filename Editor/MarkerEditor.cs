@@ -22,7 +22,7 @@ namespace VRLabs.Marker
 		public System.Collections.Generic.List<string> warnings = new System.Collections.Generic.List<string>();
 		public int bitCount;
 
-		public bool leftHanded, writeDefaults, useIndexFinger, brushSize, eraserSize, localSpace;
+		public bool leftHanded, wdSetting, useIndexFinger, brushSize, eraserSize, localSpace;
 		public int localSpaceFullBody, gestureToDraw;
 
 		private bool isWdAutoSet;
@@ -35,7 +35,7 @@ namespace VRLabs.Marker
                 descriptor = ((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>();
 
 			leftHanded = ((Marker)target).leftHanded;
-			writeDefaults = ((Marker)target).writeDefaults;
+			wdSetting = ((Marker)target).wdSetting;
 			brushSize = ((Marker)target).brushSize;
 			eraserSize = ((Marker)target).eraserSize;
 			localSpace = ((Marker)target).localSpace;
@@ -83,12 +83,12 @@ namespace VRLabs.Marker
 				if (isWdAutoSet)
                 {
 					GUI.enabled = false;
-					writeDefaults = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults (auto-detected)", "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), writeDefaults);
+					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults (auto-detected)", "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
 					GUI.enabled = true;
 				}
 				else
                 {
-					writeDefaults = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults", "Could not auto-detect.\nCheck this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), writeDefaults);
+					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults", "Could not auto-detect.\nCheck this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
 				}
 				
 
@@ -121,16 +121,25 @@ namespace VRLabs.Marker
 				// WD warning - separately handled since installation should still be allowed
 				if (descriptor != null)
                 {
-					ScriptFunctions.WriteDefaults wdSetting = descriptor.HasMixedWriteDefaults();
-					if (wdSetting == ScriptFunctions.WriteDefaults.Mixed)
+					var states = descriptor.AnalyzeWDState();
+                    bool isMixed = states.HaveMixedWriteDefaults(out bool isOn);
+
+					if (isMixed)
                     {
 						GUILayout.Box("Your avatar has mixed Write Defaults settings on its playable layers' states, which can cause issues with animations. The VRChat standard is Write Defaults OFF. It is recommended that Write Defaults for all states should either be all ON or all OFF.", boxStyle);
 					}
                     else
                     {
-						writeDefaults = (wdSetting == ScriptFunctions.WriteDefaults.On);
+						wdSetting = isOn;
 						isWdAutoSet = true;
 					}
+
+					bool hasEmptyAnimations = states.HaveEmpyMotionsInStates();
+
+                    if (hasEmptyAnimations)
+                    {
+                        GUILayout.Box("Some states have no motions, this can be an issue when using WD Off.", boxStyle);
+                    }
                 }
 
 				// "Generate" button
@@ -217,7 +226,7 @@ namespace VRLabs.Marker
 			}
 
 			((Marker)target).leftHanded = leftHanded;
-			((Marker)target).writeDefaults = writeDefaults;
+			((Marker)target).wdSetting = wdSetting;
 			((Marker)target).brushSize = brushSize;
 			((Marker)target).eraserSize = eraserSize;
 			((Marker)target).localSpace = localSpace;
@@ -340,7 +349,7 @@ namespace VRLabs.Marker
 				ScriptFunctions.RemoveLayer(FX, "M_CullSimple");
 			}
 
-			if (writeDefaults)
+			if (wdSetting)
 			{
 				ScriptFunctions.SetWriteDefaults(FX);
 			}
@@ -378,7 +387,7 @@ namespace VRLabs.Marker
 				descriptor.baseAnimationLayers[2].isDefault = false;
 				descriptor.baseAnimationLayers[2].animatorController = gestureOriginal;
 
-				if (writeDefaults)
+				if (wdSetting)
 				{
 					ScriptFunctions.SetWriteDefaults(gestureOriginal);
 					EditorUtility.SetDirty(gestureOriginal);
@@ -404,7 +413,7 @@ namespace VRLabs.Marker
 			{
 				ChangeGestureCondition(gesture, 0, gestureToDraw);
 			}
-			if (writeDefaults)
+			if (wdSetting)
 			{
 				ScriptFunctions.SetWriteDefaults(gesture, true);
 			}
