@@ -14,7 +14,9 @@ namespace VRLabs.Marker
     public static class AnimatorCloner
     {
 
-        public const string STANDARD_NEW_ANIMATOR_FOLDER = "Assets/VRLabs/GeneratedAssets/";
+        public const string STANDARD_NEW_ANIMATOR_FOLDER = "Assets/VRLabs/GeneratedAssets/Animators/";
+        public const string STANDARD_NEW_PARAMASSET_FOLDER = "Assets/VRLabs/GeneratedAssets/ExpressionParameters/";
+        public const string STANDARD_NEW_MENUASSET_FOLDER = "Assets/VRLabs/GeneratedAssets/ExpressionMenu/";
         private static Dictionary<string, string> _parametersNewName;
         private static string _assetPath;
 
@@ -30,7 +32,7 @@ namespace VRLabs.Marker
 
             if (saveToNew)
             {
-                Directory.CreateDirectory("Assets/VRLabs/GeneratedAssets");
+                Directory.CreateDirectory(STANDARD_NEW_ANIMATOR_FOLDER);
                 string uniquePath = AssetDatabase.GenerateUniqueAssetPath(STANDARD_NEW_ANIMATOR_FOLDER + Path.GetFileName(_assetPath));
                 AssetDatabase.CopyAsset(_assetPath, uniquePath);
                 AssetDatabase.SaveAssets();
@@ -48,7 +50,7 @@ namespace VRLabs.Marker
             {
                 var newP = new AnimatorControllerParameter
                 {
-                    name = _parametersNewName.ContainsKey(p.name) ? _parametersNewName[p.name] : p.name,
+                    name = GetNewParameterNameIfSwapped(p.name),
                     type = p.type,
                     defaultBool = p.defaultBool,
                     defaultFloat = p.defaultFloat,
@@ -63,7 +65,7 @@ namespace VRLabs.Marker
             for (int i = 0; i < controllerToMerge.layers.Length; i++)
             {
                 AnimatorControllerLayer newL = CloneLayer(controllerToMerge.layers[i], i == 0);
-                newL.name = MakeLayerNameUnique(newL.name, mainController);
+                newL.name = mainController.MakeUniqueLayerName(newL.name);// MakeLayerNameUnique(newL.name, mainController);
                 newL.stateMachine.name = newL.name;
                 mainController.AddLayer(newL);
             }
@@ -74,6 +76,9 @@ namespace VRLabs.Marker
 
             return mainController;
         }
+
+        private static string GetNewParameterNameIfSwapped(string parameterName) => 
+            !string.IsNullOrWhiteSpace(parameterName) && _parametersNewName.ContainsKey(parameterName) ? _parametersNewName[parameterName] : parameterName;
 
         private static string MakeLayerNameUnique(string name, AnimatorController controller)
         {
@@ -128,7 +133,7 @@ namespace VRLabs.Marker
 
             foreach (var oldb in old.behaviours)
             {
-                var behaviour = n.AddStateMachineBehaviour(old.GetType());
+                var behaviour = n.AddStateMachineBehaviour(oldb.GetType());
                 CloneBehaviourParameters(oldb, behaviour);
             }
             return n;
@@ -175,20 +180,20 @@ namespace VRLabs.Marker
             var n = new AnimatorState
             {
                 cycleOffset = old.cycleOffset,
-                cycleOffsetParameter = old.cycleOffsetParameter,
+                cycleOffsetParameter = GetNewParameterNameIfSwapped(old.cycleOffsetParameter),
                 cycleOffsetParameterActive = old.cycleOffsetParameterActive,
                 hideFlags = old.hideFlags,
                 iKOnFeet = old.iKOnFeet,
                 mirror = old.mirror,
-                mirrorParameter = old.mirrorParameter,
+                mirrorParameter = GetNewParameterNameIfSwapped(old.mirrorParameter),
                 mirrorParameterActive = old.mirrorParameterActive,
                 motion = motion,
                 name = old.name,
                 speed = old.speed,
-                speedParameter = old.speedParameter,
+                speedParameter = GetNewParameterNameIfSwapped(old.speedParameter),
                 speedParameterActive = old.speedParameterActive,
                 tag = old.tag,
-                timeParameter = old.timeParameter,
+                timeParameter = GetNewParameterNameIfSwapped(old.timeParameter),
                 timeParameterActive = old.timeParameterActive,
                 writeDefaultValues = old.writeDefaultValues
             };
@@ -197,15 +202,15 @@ namespace VRLabs.Marker
         }
 
         // Taken from here: https://gist.github.com/phosphoer/93ca8dcbf925fc006e4e9f6b799c13b0
-        private static BlendTree CloneBlendTree(BlendTree newTree, BlendTree oldTree)
+        private static BlendTree CloneBlendTree(BlendTree parentTree, BlendTree oldTree)
         {
             // Create a child tree in the destination parent, this seems to be the only way to correctly 
             // add a child tree as opposed to AddChild(motion)
-            BlendTree pastedTree = newTree is null ? new BlendTree() : newTree.CreateBlendTreeChild(newTree.maxThreshold);
+            BlendTree pastedTree = new BlendTree();
             pastedTree.name = oldTree.name;
             pastedTree.blendType = oldTree.blendType;
-            pastedTree.blendParameter = oldTree.blendParameter;
-            pastedTree.blendParameterY = oldTree.blendParameterY;
+            pastedTree.blendParameter = GetNewParameterNameIfSwapped(oldTree.blendParameter);
+            pastedTree.blendParameterY = GetNewParameterNameIfSwapped(oldTree.blendParameterY);
             pastedTree.minThreshold = oldTree.minThreshold;
             pastedTree.maxThreshold = oldTree.maxThreshold;
             pastedTree.useAutomaticThresholds = oldTree.useAutomaticThresholds;
@@ -214,19 +219,33 @@ namespace VRLabs.Marker
             // Motions can be directly added as references while trees must be recursively to avoid accidental sharing
             foreach (var child in oldTree.children)
             {
+                var children = pastedTree.children;
+
+                var childMotion = new ChildMotion
+                {
+                    timeScale = child.timeScale,
+                    position = child.position,
+                    cycleOffset = child.cycleOffset,
+                    mirror = child.mirror,
+                    threshold = child.threshold,
+                    directBlendParameter = GetNewParameterNameIfSwapped(child.directBlendParameter)
+                };
+
                 if (child.motion is BlendTree tree)
                 {
                     var childTree = CloneBlendTree(pastedTree, tree);
+                    childMotion.motion = childTree;
                     // need to save the blend tree into the animator
                     childTree.hideFlags = HideFlags.HideInHierarchy;
                     AssetDatabase.AddObjectToAsset(childTree, _assetPath);
                 }
                 else
                 {
-                    var children = pastedTree.children;
-                    ArrayUtility.Add(ref children, child);
-                    pastedTree.children = children;
+                    childMotion.motion = child.motion;
                 }
+                
+                ArrayUtility.Add(ref children, childMotion);
+                pastedTree.children = children;
             }
 
             return pastedTree;
@@ -291,10 +310,28 @@ namespace VRLabs.Marker
                         var d = old as VRCAvatarParameterDriver;
                         l.debugString = d.debugString;
                         l.localOnly = d.localOnly;
+                        l.isLocalPlayer = d.isLocalPlayer;
+                        l.initialized = d.initialized;
                         l.parameters = d.parameters.ConvertAll(p =>
                         {
-                            string name = _parametersNewName.ContainsKey(p.name) ? _parametersNewName[p.name] : p.name;
-                            return new VRC_AvatarParameterDriver.Parameter { name = name, value = p.value, chance = p.chance, valueMin = p.valueMin, valueMax = p.valueMax, type = p.type };
+                            string name = GetNewParameterNameIfSwapped(p.name);
+                            return new VRC_AvatarParameterDriver.Parameter 
+                            { 
+                                name = name, 
+                                value = p.value, 
+                                chance = p.chance, 
+                                valueMin = p.valueMin, 
+                                valueMax = p.valueMax, 
+                                type = p.type, 
+                                source = GetNewParameterNameIfSwapped(p.source), 
+                                convertRange = p.convertRange, 
+                                destMax = p.destMax, 
+                                destMin = p.destMin, 
+                                destParam = p.destParam, 
+                                sourceMax = p.sourceMax, 
+                                sourceMin = p.sourceMin, 
+                                sourceParam = p.sourceParam
+                            };
                         });
                         break;
                     }
@@ -349,16 +386,20 @@ namespace VRLabs.Marker
             return childrenStates;
         }
 
-        private static List<AnimatorStateMachine> GetStateMachinesRecursive(AnimatorStateMachine sm)
+        private static List<AnimatorStateMachine> GetStateMachinesRecursive(AnimatorStateMachine sm,
+            IDictionary<AnimatorStateMachine, AnimatorStateMachine> newAnimatorsByChildren = null)
         {
             List<AnimatorStateMachine> childrenSm = sm.stateMachines.Select(x => x.stateMachine).ToList();
 
             List<AnimatorStateMachine> gcsm = new List<AnimatorStateMachine>();
+            gcsm.Add(sm);
             foreach (var child in childrenSm)
-                gcsm.AddRange(GetStateMachinesRecursive(child));
-
-            childrenSm.AddRange(gcsm);
-            return childrenSm;
+            {
+                newAnimatorsByChildren?.Add(child, sm);
+                gcsm.AddRange(GetStateMachinesRecursive(child, newAnimatorsByChildren));
+            }
+            
+            return gcsm;
         }
 
         private static AnimatorState FindMatchingState(List<AnimatorState> old, List<AnimatorState> n, AnimatorTransitionBase transition)
@@ -383,15 +424,17 @@ namespace VRLabs.Marker
         {
             List<AnimatorState> oldStates = GetStatesRecursive(old);
             List<AnimatorState> newStates = GetStatesRecursive(n);
-            List<AnimatorStateMachine> oldStateMachines = GetStateMachinesRecursive(old);
-            List<AnimatorStateMachine> newStateMachines = GetStateMachinesRecursive(n);
+            var newAnimatorsByChildren = new Dictionary<AnimatorStateMachine, AnimatorStateMachine>();
+            var oldAnimatorsByChildren = new Dictionary<AnimatorStateMachine, AnimatorStateMachine>();
+            List<AnimatorStateMachine> oldStateMachines = GetStateMachinesRecursive(old, oldAnimatorsByChildren);
+            List<AnimatorStateMachine> newStateMachines = GetStateMachinesRecursive(n, newAnimatorsByChildren);
             // Generate state transitions
             for (int i = 0; i < oldStates.Count; i++)
             {
                 foreach (var transition in oldStates[i].transitions)
                 {
                     AnimatorStateTransition newTransition = null;
-                    if (transition.isExit)
+                    if (transition.isExit && transition.destinationState == null && transition.destinationStateMachine == null)
                     {
                         newTransition = newStates[i].AddExitTransition();
                     }
@@ -412,8 +455,43 @@ namespace VRLabs.Marker
                         ApplyTransitionSettings(transition, newTransition);
                 }
             }
+            
+            for (int i = 0; i < oldStateMachines.Count; i++)
+            {
+                if(oldAnimatorsByChildren.ContainsKey(oldStateMachines[i]) && newAnimatorsByChildren.ContainsKey(newStateMachines[i]))
+                {
+                    foreach (var transition in oldAnimatorsByChildren[oldStateMachines[i]].GetStateMachineTransitions(oldStateMachines[i]))
+                    {
+                        AnimatorTransition newTransition = null;
+                        if (transition.isExit && transition.destinationState == null && transition.destinationStateMachine == null)
+                        {
+                            newTransition = newAnimatorsByChildren[newStateMachines[i]].AddStateMachineExitTransition(newStateMachines[i]);
+                        }
+                        else if (transition.destinationState != null)
+                        {
+                            var dstState = FindMatchingState(oldStates, newStates, transition);
+                            if (dstState != null)
+                                newTransition = newAnimatorsByChildren[newStateMachines[i]].AddStateMachineTransition(newStateMachines[i], dstState);
+                        }
+                        else if (transition.destinationStateMachine != null)
+                        {
+                            var dstState = FindMatchingStateMachine(oldStateMachines, newStateMachines, transition);
+                            if (dstState != null)
+                                newTransition = newAnimatorsByChildren[newStateMachines[i]].AddStateMachineTransition(newStateMachines[i], dstState);
+                        }
 
-            // Generate AnyState transitiosn
+                        if (newTransition != null)
+                            ApplyTransitionSettings(transition, newTransition);
+                    }
+                }
+                // Generate AnyState transitions
+                GenerateStateMachineBaseTransitions(oldStateMachines[i], newStateMachines[i], oldStates, newStates, oldStateMachines, newStateMachines);
+            }
+        }
+
+        private static void GenerateStateMachineBaseTransitions(AnimatorStateMachine old, AnimatorStateMachine n, List<AnimatorState> oldStates,
+            List<AnimatorState> newStates, List<AnimatorStateMachine> oldStateMachines, List<AnimatorStateMachine> newStateMachines)
+        {
             foreach (var transition in old.anyStateTransitions)
             {
                 AnimatorStateTransition newTransition = null;
@@ -429,7 +507,7 @@ namespace VRLabs.Marker
                     if (dstState != null)
                         newTransition = n.AddAnyStateTransition(dstState);
                 }
-                
+
                 if (newTransition != null)
                     ApplyTransitionSettings(transition, newTransition);
             }
@@ -450,7 +528,7 @@ namespace VRLabs.Marker
                     if (dstState != null)
                         newTransition = n.AddEntryTransition(dstState);
                 }
-                
+
                 if (newTransition != null)
                     ApplyTransitionSettings(transition, newTransition);
             }
@@ -472,10 +550,8 @@ namespace VRLabs.Marker
             newTransition.orderedInterruption = transition.orderedInterruption;
             newTransition.solo = transition.solo;
             foreach (var condition in transition.conditions)
-            {
-                string conditionName = _parametersNewName.ContainsKey(condition.parameter) ? _parametersNewName[condition.parameter] : condition.parameter;
-                newTransition.AddCondition(condition.mode, condition.threshold, conditionName);
-            }
+                newTransition.AddCondition(condition.mode, condition.threshold, GetNewParameterNameIfSwapped(condition.parameter));
+            
         }
 
         private static void ApplyTransitionSettings(AnimatorTransition transition, AnimatorTransition newTransition)
@@ -486,9 +562,8 @@ namespace VRLabs.Marker
             newTransition.name = transition.name;
             newTransition.solo = transition.solo;
             foreach (var condition in transition.conditions)
-            {
-                newTransition.AddCondition(condition.mode, condition.threshold, condition.parameter);
-            }
+                newTransition.AddCondition(condition.mode, condition.threshold, GetNewParameterNameIfSwapped(condition.parameter));
+            
         }
     }
 }
