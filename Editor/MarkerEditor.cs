@@ -683,7 +683,6 @@ namespace VRLabs.Marker
 					leftHanded ? HumanBodyBones.LeftIndexDistal : HumanBodyBones.RightIndexDistal
 				);
 
-				penPrefab.name = "Marker";
 				penPrefab.transform.SetParent(target);
 				penPrefab.transform.localPosition = Vector3.zero;
 				penPrefab.transform.localRotation = Quaternion.identity;
@@ -699,10 +698,6 @@ namespace VRLabs.Marker
 
 		void GenerateQuestPenAnimator(ref AnimatorController controller, Transform penPrefab, string targetPath, string directory)
 		{
-			//AnimationClip penClip = CreatePenClip(targetPath, directory);
-			//AnimationClip colorClip = CreatePenColorClip(targetPath, directory);
-			//AnimationClip whiteClip = CreatePenWhiteClip(targetPath, directory);
-
 			AnimationClip drawClip = GenerateMarkerClip(targetPath, true, 9999);
 			AnimationClip noDrawClip = GenerateMarkerClip(targetPath, false, 9999);
 			AnimationClip offClip = GenerateMarkerClip(targetPath, false, 0);
@@ -737,21 +732,21 @@ namespace VRLabs.Marker
 				// generate animations
 				AnimatorState offState = markerLayer.stateMachine.AddState(
 					"Marker_Off", new Vector2(0, 130));
-				offState.writeDefaultValues = this.wdSetting;
+				offState.writeDefaultValues = wdSetting;
 				offState.motion = offClip;
 				offState.timeParameterActive = true;
 				offState.timeParameter = M_COLOR_PARAM;
 
 				AnimatorState drawState = markerLayer.stateMachine.AddState(
 					"Marker_Draw", new Vector2(-150, 220));
-				drawState.writeDefaultValues = this.wdSetting;
+				drawState.writeDefaultValues = wdSetting;
 				drawState.motion = drawClip;
 				drawState.timeParameterActive = true;
 				drawState.timeParameter = M_COLOR_PARAM;
 
 				AnimatorState noDrawState = markerLayer.stateMachine.AddState(
 					"Marker_NoDraw", new Vector2(150, 220));
-				noDrawState.writeDefaultValues = this.wdSetting;
+				noDrawState.writeDefaultValues = wdSetting;
 				noDrawState.motion = noDrawClip;
 				noDrawState.timeParameterActive = true;
 				noDrawState.timeParameter = M_COLOR_PARAM;
@@ -761,12 +756,12 @@ namespace VRLabs.Marker
 					AnimatorStateTransition t = offState.AddTransition(drawState);
 					t.duration = 0;
 					t.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-					t.AddCondition(AnimatorConditionMode.Equals, 3, M_GESTURE_PARAM);
+					t.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
 
 					AnimatorStateTransition t1 = offState.AddTransition(noDrawState);
 					t1.duration = 0;
 					t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-					t1.AddCondition(AnimatorConditionMode.NotEqual, 3, M_GESTURE_PARAM);
+					t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
 				}
 
 				// generate transitions out of MARKER_DRAW
@@ -778,7 +773,7 @@ namespace VRLabs.Marker
 					AnimatorStateTransition t1 = drawState.AddTransition(noDrawState);
 					t1.duration = 0;
 					t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-					t1.AddCondition(AnimatorConditionMode.NotEqual, 3, M_GESTURE_PARAM);
+					t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
 				}
 
 				// generate transitions out of MARKER_NO_DRAW
@@ -790,7 +785,7 @@ namespace VRLabs.Marker
 					AnimatorStateTransition t1 = noDrawState.AddTransition(drawState);
 					t1.duration = 0;
 					t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-					t1.AddCondition(AnimatorConditionMode.Equals, 3, M_GESTURE_PARAM);
+					t1.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
 				}
 			}
 
