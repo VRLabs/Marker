@@ -66,20 +66,19 @@ namespace VRLabs.Marker
 
             GUILayout.Space(8);
             EditorGUILayout.BeginHorizontal(boxStyle);
-            if (isQuest)
-            {
-                EditorGUILayout.LabelField("<b><size=14>Quest Marker 3.0</size></b> <size=12>by Cam @ VRLabs</size>",
+            if (isQuest) {
+                EditorGUILayout.LabelField("<b><size=14>Quest Marker 3.0</size></b> <size=12>by ksivl + Cam @ VRLabs</size>",
                     titleStyle, GUILayout.MinHeight(20f));
-            }
-            else
-            {
+
+                // draw platform icons if space is available
+            } else {
                 EditorGUILayout.LabelField("<b><size=14>PC Marker 3.0</size></b> <size=12>by ksivl @ VRLabs</size>",
                     titleStyle, GUILayout.MinHeight(20f));
             }
             EditorGUILayout.EndHorizontal();
 
-            // draw platform icons if space is available
-            if (Screen.width > 325)
+            int minWidth = isQuest ? 370 : 300;
+            if (Screen.width > minWidth)
             {
                 GUI.DrawTexture(new Rect(25, 8, 32, 32), platformIcon);
                 GUI.DrawTexture(new Rect(Screen.width - 45, 8, 32, 32), platformIcon);
@@ -426,6 +425,7 @@ namespace VRLabs.Marker
             ) as AnimatorController;
 
             // remove controller layers before merging to avatar, corresponding to setup
+            /*
             if (leftHanded)
                 ScriptFunctions.RemoveLayer(FX, "M_Marker R");
             else
@@ -441,7 +441,7 @@ namespace VRLabs.Marker
             {
                 ScriptFunctions.RemoveLayer(FX, "M_EraserSize");
                 ScriptFunctions.RemoveParameter(FX, "M_EraserSize");
-            }
+            }*/
 
             if (!localSpace)
             {
@@ -796,261 +796,6 @@ namespace VRLabs.Marker
             return controller;
         }
 
-        #region Quest Pen Stuff
-
-        void GenerateQuest(string directory)
-        {
-            string controllerPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/MarkerFX.controller");
-            Animator avatarAnimator = descriptor.gameObject.GetComponent<Animator>();
-
-            // setup pen prefab
-            GameObject penPrefab = new GameObject("Marker", typeof(TrailRenderer));
-            {
-                // create trail renderer
-                TrailRenderer tr = penPrefab.GetComponent<TrailRenderer>();
-                tr.time = 9999;
-                tr.widthMultiplier = 0.007f;
-                tr.minVertexDistance = 0;
-                tr.emitting = false;
-                tr.material = Resources.Load<Material>("M_Mat Quest Marker");
-                tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                tr.receiveShadows = false;
-
-                Transform target = avatarAnimator.GetBoneTransform(
-                    leftHanded ? HumanBodyBones.LeftIndexDistal : HumanBodyBones.RightIndexDistal
-                );
-
-                penPrefab.transform.SetParent(target);
-                penPrefab.transform.localPosition = Vector3.zero;
-                penPrefab.transform.localRotation = Quaternion.identity;
-            }
-
-            // create files
-            string targetPath = penPrefab.transform.GetHierarchyPath(avatar.transform);
-            AnimatorController newController = GenerateControllerAndReturn(controllerPath);
-
-            GenerateQuestPenAnimator(ref newController, penPrefab.transform, targetPath, directory);
-            VRLabs.Marker.ScriptFunctions.MergeController(descriptor, newController, ScriptFunctions.PlayableLayer.FX, directory);
-        }
-
-        void GenerateQuestPenAnimator(ref AnimatorController controller, Transform penPrefab, string targetPath, string directory)
-        {
-            AnimationClip drawClip = GenerateQuestMarkerClip(targetPath, true, 9999);
-            AnimationClip noDrawClip = GenerateQuestMarkerClip(targetPath, false, 9999);
-            AnimationClip offClip = GenerateQuestMarkerClip(targetPath, false, 0);
-
-            AssetDatabase.CreateAsset(drawClip, $"{directory}/M_Draw.anim");
-            AssetDatabase.CreateAsset(noDrawClip, $"{directory}/M_NoDraw.anim");
-            AssetDatabase.CreateAsset(offClip, $"{directory}/M_Off.anim");
-
-
-            // parameters
-            string M_GESTURE_PARAM = leftHanded ? "GestureLeft" : "GestureRight";
-            string M_COLOR_PARAM = "M_Color";
-            string M_MARKER_PARAM = "M_Marker";
-
-            controller.AddParameter(M_GESTURE_PARAM, AnimatorControllerParameterType.Int);
-            controller.AddParameter(M_COLOR_PARAM, AnimatorControllerParameterType.Float);
-            controller.AddParameter(M_MARKER_PARAM, AnimatorControllerParameterType.Bool);
-
-            // generate marker layer
-            controller.AddLayer("M_Marker");
-            AnimatorControllerLayer markerLayer = controller.layers[controller.layers.Length - 1];
-            {
-                // generate avatar mask
-                AvatarMask mask = CreateAvatarMask(penPrefab, directory);
-                markerLayer.avatarMask = mask;
-
-                // state machine shit n stuff
-                markerLayer.stateMachine.exitPosition = new Vector2(20, 0);
-                markerLayer.stateMachine.anyStatePosition = new Vector2(20, 40);
-                markerLayer.stateMachine.entryPosition = new Vector2(20, 80);
-
-                // generate animations
-                AnimatorState offState = markerLayer.stateMachine.AddState(
-                    "M_Off", new Vector2(0, 130));
-                offState.writeDefaultValues = wdSetting;
-                offState.motion = offClip;
-                offState.timeParameterActive = true;
-                offState.timeParameter = M_COLOR_PARAM;
-
-                AnimatorState drawState = markerLayer.stateMachine.AddState(
-                    "M_Draw", new Vector2(-150, 220));
-                drawState.writeDefaultValues = wdSetting;
-                drawState.motion = drawClip;
-                drawState.timeParameterActive = true;
-                drawState.timeParameter = M_COLOR_PARAM;
-
-                AnimatorState noDrawState = markerLayer.stateMachine.AddState(
-                    "M_NoDraw", new Vector2(150, 220));
-                noDrawState.writeDefaultValues = wdSetting;
-                noDrawState.motion = noDrawClip;
-                noDrawState.timeParameterActive = true;
-                noDrawState.timeParameter = M_COLOR_PARAM;
-
-                // generate transitions out of MARKER_OFF
-                {
-                    AnimatorStateTransition t = offState.AddTransition(drawState);
-                    t.duration = 0;
-                    t.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-                    t.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
-
-                    AnimatorStateTransition t1 = offState.AddTransition(noDrawState);
-                    t1.duration = 0;
-                    t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-                    t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
-                }
-
-                // generate transitions out of MARKER_DRAW
-                {
-                    AnimatorStateTransition t = drawState.AddTransition(offState);
-                    t.duration = 0;
-                    t.AddCondition(AnimatorConditionMode.IfNot, 1, M_MARKER_PARAM);
-
-                    AnimatorStateTransition t1 = drawState.AddTransition(noDrawState);
-                    t1.duration = 0;
-                    t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-                    t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
-                }
-
-                // generate transitions out of MARKER_NO_DRAW
-                {
-                    AnimatorStateTransition t = noDrawState.AddTransition(offState);
-                    t.duration = 0;
-                    t.AddCondition(AnimatorConditionMode.IfNot, 1, M_MARKER_PARAM);
-
-                    AnimatorStateTransition t1 = noDrawState.AddTransition(drawState);
-                    t1.duration = 0;
-                    t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
-                    t1.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
-                }
-            }
-
-            // assign back to controller
-            AnimatorControllerLayer[] layers = controller.layers;
-            layers[0] = markerLayer;
-            controller.layers = layers;
-        }
-
-        static AvatarMask CreateAvatarMask(Transform penPrefab, string directory)
-        {
-            AvatarMask mask = new AvatarMask();
-            for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
-                mask.SetHumanoidBodyPartActive((AvatarMaskBodyPart)i, false);
-            mask.AddTransformPath(penPrefab, false);
-
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{directory}/MarkerMask.asset");
-            AssetDatabase.CreateAsset(mask, path);
-            EditorUtility.SetDirty(mask);
-
-            return mask;
-        }
-
-        static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, float lifetime)
-        {
-            AnimationClip clip = new AnimationClip();
-            EditorUtility.SetDirty(clip);
-
-            // emission
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "m_Emitting", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                    new Keyframe() { time = 0, value=emitting ? 1 : 0, inTangent=0, outTangent=0 },
-                },
-            });
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "m_Time", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                    new Keyframe() { time = 0, value=lifetime, inTangent=0, outTangent=0 },
-                }
-            });
-
-            // color
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.r", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
-            }
-            });
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.g", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
-            }
-            });
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.b", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 10/60f, value=0 },
-                new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
-            }
-            });
-
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.r", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
-            }
-            });
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.g", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
-            }
-            });
-            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.b", new AnimationCurve()
-            {
-                keys = new Keyframe[] {
-                new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 10/60f, value=0 },
-                new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-                new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
-            }
-            });
-
-            return clip;
-        }
-
-        #endregion Quest Pen Stuff
-
         private void CheckRequirements()
         {
             warnings.Clear();
@@ -1198,6 +943,273 @@ namespace VRLabs.Marker
                 }
             }
         }
+        
+        #region Quest Pen Stuff
+
+        void GenerateQuest(string directory)
+        {
+            // pen prefab
+            GameObject penPrefab = new GameObject("Marker", typeof(TrailRenderer));
+            {
+                // trail renderer
+                TrailRenderer tr = penPrefab.GetComponent<TrailRenderer>();
+                tr.time = 9999;
+                tr.widthMultiplier = 0.007f;
+                tr.minVertexDistance = 0;
+                tr.emitting = false;
+                tr.material = Resources.Load<Material>("M_Mat Quest Marker");
+                tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                tr.receiveShadows = false;
+
+                // find index fingers
+                Animator avatarAnimator = descriptor.gameObject.GetComponent<Animator>();
+                Transform target = avatarAnimator.GetBoneTransform(
+                    leftHanded ? HumanBodyBones.LeftIndexDistal : HumanBodyBones.RightIndexDistal
+                );
+
+                // parent
+                penPrefab.transform.SetParent(target);
+                penPrefab.transform.localPosition = Vector3.zero;
+                penPrefab.transform.localRotation = Quaternion.identity;
+            }
+
+            // animator
+            string controllerPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/MarkerFX.controller");
+            AnimatorController newController = GenerateControllerAndReturn(controllerPath);
+
+            string targetPath = penPrefab.transform.GetHierarchyPath(avatar.transform);
+            GenerateQuestPenAnimator(ref newController, penPrefab.transform, targetPath, directory);
+            ScriptFunctions.MergeController(descriptor, newController, ScriptFunctions.PlayableLayer.FX, directory);
+
+            // parameters
+            VRCExpressionParameters.Parameter
+            p_marker = new VRCExpressionParameters.Parameter
+            { name = "M_Marker", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
+            p_color = new VRCExpressionParameters.Parameter
+            { name = "M_Color", valueType = VRCExpressionParameters.ValueType.Float, saved = true };
+            ScriptFunctions.AddParameter(descriptor, p_marker, directory);
+            ScriptFunctions.AddParameter(descriptor, p_color, directory);
+        }
+
+        void GenerateQuestPenAnimator(ref AnimatorController controller, Transform penPrefab, string targetPath, string directory)
+        {
+            // animations
+            AnimationClip drawClip = GenerateQuestMarkerClip(targetPath, true, 9999);
+            AnimationClip noDrawClip = GenerateQuestMarkerClip(targetPath, false, 9999);
+            AnimationClip offClip = GenerateQuestMarkerClip(targetPath, false, 0);
+
+            AssetDatabase.CreateAsset(drawClip, $"{directory}/M_Draw.anim");
+            AssetDatabase.CreateAsset(noDrawClip, $"{directory}/M_NoDraw.anim");
+            AssetDatabase.CreateAsset(offClip, $"{directory}/M_Off.anim");
+
+
+            // parameters
+            string M_GESTURE_PARAM = leftHanded ? "GestureLeft" : "GestureRight";
+            string M_COLOR_PARAM = "M_Color";
+            string M_MARKER_PARAM = "M_Marker";
+
+            controller.AddParameter(M_GESTURE_PARAM, AnimatorControllerParameterType.Int);
+            controller.AddParameter(M_COLOR_PARAM, AnimatorControllerParameterType.Float);
+            controller.AddParameter(M_MARKER_PARAM, AnimatorControllerParameterType.Bool);
+
+
+            // generate marker animator layer
+            controller.AddLayer("M_Marker");
+            AnimatorControllerLayer markerLayer = controller.layers[controller.layers.Length - 1];
+            {
+                // avatar mask
+                AvatarMask mask = CreateAvatarMask(penPrefab, directory);
+                markerLayer.avatarMask = mask;
+
+                // state machine default state positions
+                markerLayer.stateMachine.exitPosition = new Vector2(20, 0);
+                markerLayer.stateMachine.anyStatePosition = new Vector2(20, 40);
+                markerLayer.stateMachine.entryPosition = new Vector2(20, 80);
+
+                // animator states
+                AnimatorState offState = markerLayer.stateMachine.AddState(
+                    "M_Off", new Vector2(0, 130));
+                offState.writeDefaultValues = wdSetting;
+                offState.motion = offClip;
+                offState.timeParameterActive = true;
+                offState.timeParameter = M_COLOR_PARAM;
+
+                AnimatorState drawState = markerLayer.stateMachine.AddState(
+                    "M_Draw", new Vector2(-150, 220));
+                drawState.writeDefaultValues = wdSetting;
+                drawState.motion = drawClip;
+                drawState.timeParameterActive = true;
+                drawState.timeParameter = M_COLOR_PARAM;
+
+                AnimatorState noDrawState = markerLayer.stateMachine.AddState(
+                    "M_NoDraw", new Vector2(150, 220));
+                noDrawState.writeDefaultValues = wdSetting;
+                noDrawState.motion = noDrawClip;
+                noDrawState.timeParameterActive = true;
+                noDrawState.timeParameter = M_COLOR_PARAM;
+
+                // transitions out of MARKER_OFF
+                {
+                    AnimatorStateTransition t = offState.AddTransition(drawState);
+                    t.duration = 0;
+                    t.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
+                    t.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
+
+                    AnimatorStateTransition t1 = offState.AddTransition(noDrawState);
+                    t1.duration = 0;
+                    t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
+                    t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
+                }
+
+                // transitions out of MARKER_DRAW
+                {
+                    AnimatorStateTransition t = drawState.AddTransition(offState);
+                    t.duration = 0;
+                    t.AddCondition(AnimatorConditionMode.IfNot, 1, M_MARKER_PARAM);
+
+                    AnimatorStateTransition t1 = drawState.AddTransition(noDrawState);
+                    t1.duration = 0;
+                    t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
+                    t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
+                }
+
+                // transitions out of MARKER_NO_DRAW
+                {
+                    AnimatorStateTransition t = noDrawState.AddTransition(offState);
+                    t.duration = 0;
+                    t.AddCondition(AnimatorConditionMode.IfNot, 1, M_MARKER_PARAM);
+
+                    AnimatorStateTransition t1 = noDrawState.AddTransition(drawState);
+                    t1.duration = 0;
+                    t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
+                    t1.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
+                }
+            }
+
+            // assign back to controller
+            AnimatorControllerLayer[] layers = controller.layers;
+            layers[0] = markerLayer;
+            controller.layers = layers;
+        }
+
+        static AvatarMask CreateAvatarMask(Transform penPrefab, string directory)
+        {
+            AvatarMask mask = new AvatarMask();
+            for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
+                mask.SetHumanoidBodyPartActive((AvatarMaskBodyPart)i, false);
+            mask.AddTransformPath(penPrefab, false);
+
+            string path = AssetDatabase.GenerateUniqueAssetPath($"{directory}/MarkerMask.asset");
+            AssetDatabase.CreateAsset(mask, path);
+            EditorUtility.SetDirty(mask);
+
+            return mask;
+        }
+
+        static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, float lifetime)
+        {
+            AnimationClip clip = new AnimationClip();
+            EditorUtility.SetDirty(clip);
+
+            // trail renderer state
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "m_Emitting", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=emitting ? 1 : 0, inTangent=0, outTangent=0 },
+                },
+            });
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "m_Time", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=lifetime, inTangent=0, outTangent=0 },
+                }
+            });
+
+            // trail renderer color
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.r", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.g", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.b", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.r", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.g", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+            clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.b", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+
+            return clip;
+        }
+
+        #endregion Quest Pen Stuff
     }
 }
 #endif
