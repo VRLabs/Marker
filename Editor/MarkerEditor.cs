@@ -26,12 +26,18 @@ namespace VRLabs.Marker
 		public int localSpaceFullBody, gestureToDraw;
 
 		private bool isWdAutoSet;
-		private readonly ScriptFunctions.PlayableLayer[] playablesUsed = { ScriptFunctions.PlayableLayer.Gesture, ScriptFunctions.PlayableLayer.FX };
+		private readonly ScriptFunctions.PlayableLayer[] playablesUsedPC = { 
+			ScriptFunctions.PlayableLayer.Gesture, ScriptFunctions.PlayableLayer.FX };
+		private readonly ScriptFunctions.PlayableLayer[] playablesUsedQuest = { ScriptFunctions.PlayableLayer.Gesture };
 		const float KSIVL_UNIT = 0.4156029f;
 
+		Texture2D platformIcon;
 		bool isQuest;
 
-        private void OnEnable() => isQuest = EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android;
+		private void OnEnable() {
+			isQuest = EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android;
+			platformIcon = Resources.Load<Texture2D>(isQuest ? "Icons/Editor Icons/Meta" : "Icons/Editor Icons/Windows");
+		}
 
         public void Reset()
 		{
@@ -60,11 +66,19 @@ namespace VRLabs.Marker
 			GUILayout.Space(8);
 			EditorGUILayout.BeginHorizontal(boxStyle);
 			if (isQuest) {
-				EditorGUILayout.LabelField("<b><size=14>Quest Marker 3.0</size></b> <size=12>by Cam @ VRLabs</size>", titleStyle, GUILayout.MinHeight(20f));
+				EditorGUILayout.LabelField("<b><size=14>Quest Marker 3.0</size></b> <size=12>by Cam @ VRLabs</size>", 
+					titleStyle, GUILayout.MinHeight(20f));
 			} else {
-				EditorGUILayout.LabelField("<b><size=14>Marker 3.0</size></b> <size=12>by ksivl @ VRLabs</size>", titleStyle, GUILayout.MinHeight(20f));
+				EditorGUILayout.LabelField("<b><size=14>PC Marker 3.0</size></b> <size=12>by ksivl @ VRLabs</size>", 
+					titleStyle, GUILayout.MinHeight(20f));
 			}
 			EditorGUILayout.EndHorizontal();
+
+			// draw platform icons if space is available
+			if (Screen.width > 325) {
+				GUI.DrawTexture(new Rect(25, 8, 32, 32), platformIcon);
+				GUI.DrawTexture(new Rect(Screen.width - 45, 8, 32, 32), platformIcon);
+			}
 
 			if (EditorApplication.isPlaying)
 			{
@@ -80,31 +94,35 @@ namespace VRLabs.Marker
 			{
 				GUILayout.Space(8);
 
+				EditorGUI.BeginChangeCheck();
 				descriptor = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("Avatar", descriptor, typeof(VRCAvatarDescriptor), true);
-				if (descriptor != null)
-                {
+				if (descriptor != null) {
 					avatar = descriptor.gameObject.GetComponent<Animator>();
 				}
+
 				GUILayout.Space(8);
 
 				leftHanded = EditorGUILayout.ToggleLeft("Left-handed", leftHanded);
-				if (isWdAutoSet)
-                {
+				if (isWdAutoSet) {
 					GUI.enabled = false;
-					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults (auto-detected)", "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
+					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults (auto-detected)", "Check this if you " +
+                        "are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
 					GUI.enabled = true;
-				}
-				else
-                {
-					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults", "Could not auto-detect.\nCheck this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
+				} else {
+					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults", "Could not auto-detect.\n" +
+                        "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
 				}
 				
 
-				string[] gestureOptions = new string[]
-				{
-				null, "Fist", "Openhand", "Fingerpoint", "Victory", "Rock'n'Roll", "Handgun", "Thumbs up"
+				string[] gestureOptions = new string[] {
+					null, "Fist", "Openhand", "Fingerpoint", "Victory", "Rock'n'Roll", "Handgun", "Thumbs up"
 				};
-				gestureToDraw = EditorGUILayout.Popup(new GUIContent("Gesture to draw", "Fingerpoint is recommended. Avoid Rock'n'Roll on Oculus controllers; you'll accidentally draw."), gestureToDraw, gestureOptions);
+				gestureToDraw = EditorGUILayout.Popup(new GUIContent(
+					"Gesture to draw", 
+					"Fingerpoint is recommended. Avoid Rock'n'Roll on Oculus controllers; you'll accidentally draw."), 
+					gestureToDraw, 
+					gestureOptions
+				);
 
 				GUILayout.Space(8);
 
@@ -112,15 +130,27 @@ namespace VRLabs.Marker
 					brushSize = EditorGUILayout.ToggleLeft("Adjustable brush size", brushSize);
 					eraserSize = EditorGUILayout.ToggleLeft("Adjustable eraser size", eraserSize);
 				}
-				useIndexFinger = EditorGUILayout.ToggleLeft(new GUIContent("Use index finger to draw", "By default, you draw with a shiny pen. Check this to draw with your index finger instead."), useIndexFinger);
+
+				useIndexFinger = EditorGUILayout.ToggleLeft(new GUIContent("Use index finger to draw", "By default, you draw " +
+                    "with a shiny pen. Check this to draw with your index finger instead."), useIndexFinger);
 
 				if (!isQuest) {
-					localSpace = EditorGUILayout.ToggleLeft(new GUIContent("Enable local space", "Check this to be able to attach your drawings to various locations on your body! If unchecked, you can only attach your drawing to your player capsule."), localSpace);
+					localSpace = EditorGUILayout.ToggleLeft(new GUIContent("Enable local space", "Check this to be able to " +
+                        "attach your drawings to various locations on your body! If unchecked, you can only attach your drawing " +
+                        "to your player capsule."), localSpace);				
 				}
 
 				if (!isQuest && localSpace)
 				{
-					GUIContent[] layoutOptions = { new GUIContent("Half-Body (Hips, Chest, Head, Hands)", "You can attach the drawing to your hips, chest, head, or either hand."), new GUIContent("Full-Body (Half-Body Plus Feet)", "You can also attach the drawing to your feet! (For half-body users, the drawing would follow VRChat's auto-footstep IK)") };
+					GUIContent[] layoutOptions = { 
+						new GUIContent("Half-Body (Hips, Chest, Head, Hands)", "You can attach " +
+                        "the drawing to your hips, chest, head, or either hand."), 
+
+						new GUIContent("Full-Body (Half-Body Plus Feet)", 
+						"You can also attach the drawing to your feet! (For half-body users, the drawing would follow VRChat's " +
+                        "auto-footstep IK)") 
+					};
+
 					GUILayout.BeginVertical("Box");
 					localSpaceFullBody = GUILayout.SelectionGrid(localSpaceFullBody, layoutOptions, 1);
 					GUILayout.EndVertical();
@@ -129,7 +159,7 @@ namespace VRLabs.Marker
 				GUILayout.Space(8);
 
 				GetBitCount();
-				EditorGUILayout.LabelField("Parameter memory bits needed: " + bitCount);
+
 				
 				// WD warning - separately handled since installation should still be allowed
 				if (descriptor != null)
@@ -139,7 +169,9 @@ namespace VRLabs.Marker
 
 					if (isMixed)
                     {
-						GUILayout.Box("Your avatar has mixed Write Defaults settings on its playable layers' states, which can cause issues with animations. The VRChat standard is Write Defaults OFF. It is recommended that Write Defaults for all states should either be all ON or all OFF.", boxStyle);
+						GUILayout.Box("Your avatar has mixed Write Defaults settings on its playable layers' states, " +
+                            "which can cause issues with animations. The VRChat standard is Write Defaults OFF. " +
+                            "It is recommended that Write Defaults for all states should either be all ON or all OFF.", boxStyle);
 					}
                     else
                     {
@@ -152,8 +184,11 @@ namespace VRLabs.Marker
                     if (hasEmptyAnimations)
                     {
                         GUILayout.Box("Some states have no motions, this can be an issue when using WD Off.", boxStyle);
-                    }
-                }
+					}
+
+				}
+
+				EditorGUILayout.LabelField($"Parameter memory needed: {bitCount}");
 
 				// "Generate" button
 				CheckRequirements();
@@ -169,7 +204,10 @@ namespace VRLabs.Marker
 						catch (Exception e)
 						{
 							Debug.LogException(e);
-							EditorUtility.DisplayDialog("Error Generating Marker", "Sorry, an error occured generating the Marker. Please take a snapshot of this code monkey information and send it to ksivl#4278 so it can be resolved.\n=================================================\n" + e.Message + "\n" + e.Source + "\n" + e.StackTrace, "OK");
+							EditorUtility.DisplayDialog("Error Generating Marker", "Sorry, an error occured generating the Marker. " +
+                                "Please take a snapshot (hint: use shift + windows key + S) of this code monkey information and send " +
+                                "it to ksivl#4278 so it can be resolved.\n=================================================\n" + 
+								e.Message + "\n" + e.Source + "\n" + e.StackTrace, "OK");
 						};
 					}
 				}
@@ -185,7 +223,8 @@ namespace VRLabs.Marker
 				}
 
 				// "Remove" button
-				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
+				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedPC, "M_", "Marker") 
+					|| ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedQuest, "M_", "Marker"))
 				{
 					if (GUILayout.Button("Remove Marker", buttonStyle))
 					{
@@ -204,10 +243,11 @@ namespace VRLabs.Marker
 				}
 			}
 			// Once script is run
-			else if (((Marker)target).finished == true)
+			else if (((Marker)target).finished == true && !isQuest)
 			{
 				GUILayout.Space(8);
-				if (GUILayout.Button(new GUIContent("Adjust MarkerTarget transform", "If needed, move, rotate, or scale MarkerTarget so it's either in your hand (marker model) or at the tip of your index finger (no marker model).")))
+				if (GUILayout.Button(new GUIContent("Adjust MarkerTarget transform", "If needed, move, rotate, or scale MarkerTarget " +
+                    "so it's either in your hand (marker model) or at the tip of your index finger (no marker model).")))
 				{
 					if (((Marker)target).markerTarget.gameObject == null)
 					{
@@ -252,9 +292,12 @@ namespace VRLabs.Marker
         {
 			if (descriptor != null)
 			{
-				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
+				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedPC, "M_", "Marker")
+					|| ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedQuest, "M_", "Marker"))
 				{
-					if ((descriptor.baseAnimationLayers.Length >= 5) && (descriptor.baseAnimationLayers[4].animatorController is AnimatorController controller) && (controller != null))
+					if ((descriptor.baseAnimationLayers.Length >= 5) 
+						&& (descriptor.baseAnimationLayers[4].animatorController is AnimatorController controller) 
+						&& (controller != null))
 					// 1st cond: must have all 5 humanoid layers in descriptor
 					{
 						leftHanded = controller.HasLayer("M_Marker L");
@@ -273,8 +316,15 @@ namespace VRLabs.Marker
                         }
 						if (index != -1)
                         {
-							AnimatorStateTransition[] transitions = controller.layers[index].stateMachine.states.SelectMany(x => x.state.transitions).ToArray();
-							AnimatorCondition[] conditions = transitions.SelectMany(x => x.conditions).Where(x => x.parameter.Contains("Gesture")).ToArray();
+							AnimatorStateTransition[] transitions = controller.layers[index]
+								.stateMachine.states.SelectMany(x => x.state.transitions)
+								.ToArray();
+
+							AnimatorCondition[] conditions = transitions
+								.SelectMany(x => x.conditions)
+								.Where(x => x.parameter.Contains("Gesture"))
+								.ToArray();
+
 							if (conditions.Length > 0)
 								gestureToDraw = (int)conditions[0].threshold;
 						}
@@ -303,12 +353,17 @@ namespace VRLabs.Marker
 					DestroyImmediate(foundMarker.gameObject);
 				if (avatar.isHuman)
                 {
-					HumanBodyBones[] bonesToSearch = { HumanBodyBones.LeftHand, HumanBodyBones.RightHand };
+					HumanBodyBones[] bonesToSearch = { HumanBodyBones.LeftHand, HumanBodyBones.RightHand, 
+						HumanBodyBones.LeftIndexDistal, HumanBodyBones.RightIndexDistal };
 					for (int i = 0; i < bonesToSearch.Length; i++)
 					{
-						GameObject foundTarget = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget", true);
-						if (foundTarget != null)
-							DestroyImmediate(foundTarget);
+						GameObject foundTargetPC = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget", true);
+						if (foundTargetPC != null)
+							DestroyImmediate(foundTargetPC);
+
+						GameObject foundTargetQuest = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "Marker", true);
+						if (foundTargetQuest != null)
+							DestroyImmediate(foundTargetQuest);
 					}
 				}
 			}
@@ -333,15 +388,24 @@ namespace VRLabs.Marker
 			}
 		}
 
-		void GeneratePC(string directory) { 
+		void GeneratePC(string directory) {
 
 			// Install layers, parameters, and menu before prefab setup
 			// FX layer
-			if (useIndexFinger)
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_FX (Finger).controller", directory + "FXtemp.controller");
-			else
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_FX.controller", directory + "FXtemp.controller");
-			AnimatorController FX = AssetDatabase.LoadAssetAtPath(directory + "FXtemp.controller", typeof(AnimatorController)) as AnimatorController;
+			if (useIndexFinger) {
+				AssetDatabase.CopyAsset(
+					"Assets/VRLabs/Marker/Resources/M_FX (Finger).controller",
+					directory + "FXtemp.controller");
+			} else {
+				AssetDatabase.CopyAsset(
+					"Assets/VRLabs/Marker/Resources/M_FX.controller",
+					directory + "FXtemp.controller");
+			}
+
+			AnimatorController FX = AssetDatabase.LoadAssetAtPath(
+				directory + "FXtemp.controller", 
+				typeof(AnimatorController)
+			) as AnimatorController;
 
 			// remove controller layers before merging to avatar, corresponding to setup
 			if (leftHanded)
@@ -400,13 +464,23 @@ namespace VRLabs.Marker
 			AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(FX)); // delete temporary FX layer
 
 			// Gesture layer
-			AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Gesture.controller", directory + "gestureTemp.controller"); // to modify
-			AnimatorController gesture = AssetDatabase.LoadAssetAtPath(directory + "gestureTemp.controller", typeof(AnimatorController)) as AnimatorController;
+			AssetDatabase.CopyAsset(
+				"Assets/VRLabs/Marker/Resources/M_Gesture.controller", 
+				directory + "gestureTemp.controller"); // to modify
+			AnimatorController gesture = AssetDatabase.LoadAssetAtPath(
+				directory + "gestureTemp.controller", 
+				typeof(AnimatorController)
+			) as AnimatorController;
 
-			if (descriptor.baseAnimationLayers[2].isDefault == true || descriptor.baseAnimationLayers[2].animatorController == null)
+			if (descriptor.baseAnimationLayers[2].isDefault == true 
+				|| descriptor.baseAnimationLayers[2].animatorController == null)
 			{
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller", directory + "Gesture.controller");
-				AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(directory + "Gesture.controller", typeof(AnimatorController)) as AnimatorController;
+				AssetDatabase.CopyAsset(
+					"Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller", 
+					directory + "Gesture.controller");
+				AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(
+					directory + "Gesture.controller", typeof(AnimatorController)
+				) as AnimatorController;
 
 				descriptor.customExpressions = true;
 				descriptor.baseAnimationLayers[2].isDefault = false;
@@ -426,11 +500,17 @@ namespace VRLabs.Marker
 				{
 					if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture")
 					{
-						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture (Finger).anim", typeof(AnimationClip)) as AnimationClip;
+						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(
+							"Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture (Finger).anim", 
+							typeof(AnimationClip)
+						) as AnimationClip;
 					}
 					else if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture Draw")
 					{
-						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture Draw (Finger).anim", typeof(AnimationClip)) as AnimationClip;
+						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(
+							"Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture Draw (Finger).anim", 
+							typeof(AnimationClip)
+						) as AnimationClip;
 					}
 				}
 			}
@@ -457,7 +537,8 @@ namespace VRLabs.Marker
 					{
 						if (avatarGesture.layers[i].stateMachine.states[j].state.behaviours.Length != 0)
 						{
-							VRCAnimatorLayerControl ctrl = (VRCAnimatorLayerControl)avatarGesture.layers[i].stateMachine.states[j].state.behaviours[0];
+							VRCAnimatorLayerControl ctrl = (VRCAnimatorLayerControl)avatarGesture.layers[i]
+								.stateMachine.states[j].state.behaviours[0];
 							ctrl.layer = i;
 						}
 					}
@@ -513,7 +594,9 @@ namespace VRLabs.Marker
 
 			// handle menu instancing
 			AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Menu.asset", directory + "Marker Menu.asset");
-			VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(directory + "Marker Menu.asset", typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
+			VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(
+				directory + "Marker Menu.asset", typeof(VRCExpressionsMenu)
+			) as VRCExpressionsMenu;
 			
 			if (!localSpace) // change from submenu to 1 toggle
 			{
@@ -525,8 +608,12 @@ namespace VRLabs.Marker
 			}
 			else
 			{
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Menu Space.asset", directory + "Marker Space Submenu.asset");
-				VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(directory + "Marker Space Submenu.asset", typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
+				AssetDatabase.CopyAsset(
+					"Assets/VRLabs/Marker/Resources/M_Menu Space.asset", 
+					directory + "Marker Space Submenu.asset");
+				VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(
+					directory + "Marker Space Submenu.asset", typeof(VRCExpressionsMenu)
+				) as VRCExpressionsMenu;
 
 				if (localSpaceFullBody == 0) // remove left and right foot controls
 				{
@@ -547,11 +634,18 @@ namespace VRLabs.Marker
 
 			VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter
 				{ name = "M_Menu" };
-			Texture2D markerIcon = AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Icons/M_Icon_Menu.png", typeof(Texture2D)) as Texture2D;
+			Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(
+				"Assets/VRLabs/Marker/Resources/Icons/M_Icon_Menu.png", 
+				typeof(Texture2D)
+			) as Texture2D;
 			ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
 
 			// setup in scene
-			GameObject marker = PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Marker.prefab", typeof(GameObject))) as GameObject;
+			GameObject marker = PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath(
+				"Assets/VRLabs/Marker/Resources/Marker.prefab", 
+				typeof(GameObject))
+			) as GameObject;
+
 			if (PrefabUtility.IsPartOfPrefabInstance(marker))
 				PrefabUtility.UnpackPrefabInstance(marker, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 			marker.transform.SetParent(avatar.transform, false);
@@ -565,12 +659,15 @@ namespace VRLabs.Marker
 
 			// constrain cull object to avatar
 			Transform cull = marker.transform.Find("Cull");
-			cull.GetComponent<ParentConstraint>().SetSource(0, new ConstraintSource { sourceTransform = descriptor.transform, weight = 1f });
+			cull.GetComponent<ParentConstraint>().SetSource(0, new ConstraintSource { 
+				sourceTransform = descriptor.transform, weight = 1f });
 
 			if (useIndexFinger) 
 			{ 
 				DestroyImmediate(markerTarget.GetChild(0).gameObject); // destroy Flip
-				Transform indexDistal = leftHanded ? avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) : avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal);
+				Transform indexDistal = leftHanded 
+					? avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) 
+					: avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal);
 
 				 // prefer the end bone of the index finger if it exists
 				if (indexDistal.Find(indexDistal.gameObject.name + "_end") != null)
@@ -584,9 +681,16 @@ namespace VRLabs.Marker
 			{
 				markerModel.SetParent(marker.transform); // move it out of Targets hierarchy
 
-				Transform hand = leftHanded ? avatar.GetBoneTransform(HumanBodyBones.LeftHand) : avatar.GetBoneTransform(HumanBodyBones.RightHand);
-				Transform elbow = leftHanded ? avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm) : avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
-				// need to flip the target(model). we can use the Flip object by resetting markertarget transform, getting Flip's position, then rotating markertarget
+				Transform hand = leftHanded 
+					? avatar.GetBoneTransform(HumanBodyBones.LeftHand) 
+					: avatar.GetBoneTransform(HumanBodyBones.RightHand);
+
+				Transform elbow = leftHanded 
+					? avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm) 
+					: avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
+
+				// need to flip the target(model). we can use the Flip object by resetting markertarget transform,
+				// getting Flip's position, then rotating markertarget
 				markerTarget.SetParent(hand, true);
 				markerTarget.localPosition = Vector3.zero;
 				markerTarget.localRotation = Quaternion.Euler(0f, 0f, 0f);
@@ -597,8 +701,11 @@ namespace VRLabs.Marker
 				((Marker)target).markerModel = markerModel; // to turn its mesh renderer off when script is finished
 			}
 
-			HumanBodyBones[] bones = { HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head, HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
-			HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot };
+			HumanBodyBones[] bones = { 
+				HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head, 
+				HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftFoot, 
+				HumanBodyBones.RightFoot 
+			};
 			ParentConstraint localConstraint = local.GetComponent<ParentConstraint>();
 
 			localConstraint.SetSource(0, new ConstraintSource { sourceTransform = avatar.transform, weight = 1f });
@@ -606,13 +713,18 @@ namespace VRLabs.Marker
             {
 				for (int i = 0; i < 5; i ++)
                 {
-					localConstraint.SetSource(i+1, new ConstraintSource { sourceTransform = avatar.GetBoneTransform(bones[i]), weight = 0f });
+					localConstraint.SetSource(i+1, new ConstraintSource { 
+						sourceTransform = avatar.GetBoneTransform(bones[i]), weight = 0f 
+					});
 				}
 				if (localSpaceFullBody == 1)
 				{
 					for (int i = 5; i < 7; i++)
 					{
-						localConstraint.SetSource(i + 1, new ConstraintSource { sourceTransform = avatar.GetBoneTransform(bones[i]), weight = 0f });
+						localConstraint.SetSource(i + 1, new ConstraintSource { 
+							sourceTransform = avatar.GetBoneTransform(bones[i]), 
+							weight = 0f 
+						});
 					}
 				}
 			}
@@ -635,7 +747,8 @@ namespace VRLabs.Marker
 				main.startSize = size;
 			}
 
-			// scale MarkerTarget, which controls prefab size, according to a (normalized) worldspace distance between avatar hips and head
+			// scale MarkerTarget, which controls prefab size, according to a (normalized) worldspace distance
+			// between avatar hips and head
 			Transform hips = avatar.GetBoneTransform(HumanBodyBones.Hips);
 			Transform head = avatar.GetBoneTransform(HumanBodyBones.Head);
 			Vector3 dist = (head.position - hips.position);
@@ -698,9 +811,9 @@ namespace VRLabs.Marker
 
 		void GenerateQuestPenAnimator(ref AnimatorController controller, Transform penPrefab, string targetPath, string directory)
 		{
-			AnimationClip drawClip = GenerateMarkerClip(targetPath, true, 9999);
-			AnimationClip noDrawClip = GenerateMarkerClip(targetPath, false, 9999);
-			AnimationClip offClip = GenerateMarkerClip(targetPath, false, 0);
+			AnimationClip drawClip = GenerateQuestMarkerClip(targetPath, true, 9999);
+			AnimationClip noDrawClip = GenerateQuestMarkerClip(targetPath, false, 9999);
+			AnimationClip offClip = GenerateQuestMarkerClip(targetPath, false, 0);
 
 			AssetDatabase.CreateAsset(drawClip, $"{directory}/M_Draw.anim");
 			AssetDatabase.CreateAsset(noDrawClip, $"{directory}/M_NoDraw.anim");
@@ -717,7 +830,7 @@ namespace VRLabs.Marker
 			controller.AddParameter(M_MARKER_PARAM, AnimatorControllerParameterType.Bool);
 
 			// generate marker layer
-			controller.AddLayer("Marker");
+			controller.AddLayer("M_Marker");
 			AnimatorControllerLayer markerLayer = controller.layers[controller.layers.Length - 1];
 			{
 				// generate avatar mask
@@ -731,21 +844,21 @@ namespace VRLabs.Marker
 
 				// generate animations
 				AnimatorState offState = markerLayer.stateMachine.AddState(
-					"Marker_Off", new Vector2(0, 130));
+					"M_Off", new Vector2(0, 130));
 				offState.writeDefaultValues = wdSetting;
 				offState.motion = offClip;
 				offState.timeParameterActive = true;
 				offState.timeParameter = M_COLOR_PARAM;
 
 				AnimatorState drawState = markerLayer.stateMachine.AddState(
-					"Marker_Draw", new Vector2(-150, 220));
+					"M_Draw", new Vector2(-150, 220));
 				drawState.writeDefaultValues = wdSetting;
 				drawState.motion = drawClip;
 				drawState.timeParameterActive = true;
 				drawState.timeParameter = M_COLOR_PARAM;
 
 				AnimatorState noDrawState = markerLayer.stateMachine.AddState(
-					"Marker_NoDraw", new Vector2(150, 220));
+					"M_NoDraw", new Vector2(150, 220));
 				noDrawState.writeDefaultValues = wdSetting;
 				noDrawState.motion = noDrawClip;
 				noDrawState.timeParameterActive = true;
@@ -809,85 +922,7 @@ namespace VRLabs.Marker
 			return mask;
         }
 
-		static AnimationClip CreatePenWhiteClip(string transformPath, string directory)
-		{
-			AnimationClip clip = new AnimationClip();
-			EditorUtility.SetDirty(clip);
-
-			clip.wrapMode = WrapMode.Loop;
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.r", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0  },
-				new Keyframe() { time = 0.01f, value=1, inTangent=0, outTangent=0  },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.g", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0  },
-				new Keyframe() { time = 0.01f, value=1, inTangent=0, outTangent=0  },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.b", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0  },
-				new Keyframe() { time = 0.01f, value=1, inTangent=0, outTangent=0  },
-			}
-			});
-
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.r", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0  },
-				new Keyframe() { time = 0.01f, value=1, inTangent=0, outTangent=0  },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.g", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0  },
-				new Keyframe() { time = 0.01f, value=1, inTangent=0, outTangent=0  },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.b", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0  },
-				new Keyframe() { time = 0.01f, value=1, inTangent=0, outTangent=0  },
-			}
-			});
-			
-			AssetDatabase.CreateAsset(clip, $"{directory}/Pen White.anim");
-			return clip;
-		}
-
-		static AnimationClip CreatePenClip(string transformPath, string directory)
-		{
-			AnimationClip clip = new AnimationClip();
-			EditorUtility.SetDirty(clip);
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "m_Emitting", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 0.1f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 0.2f, value=1, inTangent=0, outTangent=0 },
-			},
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "m_Time", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 0.1f, value=9999, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 0.2f, value=9999, inTangent=0, outTangent=0 },
-			}
-			});
-			AssetDatabase.CreateAsset(clip, $"{directory}/Pen.anim");
-			return clip;
-		}
-
-		static AnimationClip GenerateMarkerClip(string transformPath, bool emitting, float lifetime) {
+		static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, float lifetime) {
 			AnimationClip clip = new AnimationClip();
 			EditorUtility.SetDirty(clip);
 
@@ -989,105 +1024,26 @@ namespace VRLabs.Marker
 			return clip;
 		}
 
-		static AnimationClip CreatePenColorClip(string transformPath, string directory)
-		{
-			AnimationClip clip = new AnimationClip();
-			EditorUtility.SetDirty(clip);
-
-			clip.wrapMode = WrapMode.Loop;
-
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.r", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.g", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._EmissionColor.b", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 10/60f, value=0 },
-				new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-			}
-			});
-
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.r", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.g", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-			}
-			});
-			clip.SetCurve(transformPath, typeof(TrailRenderer), "material._Color.b", new AnimationCurve()
-			{
-				keys = new Keyframe[] {
-				new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 10/60f, value=0 },
-				new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
-				new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
-			}
-			});
-
-			AssetDatabase.CreateAsset(clip, $"{directory}/Pen Color.anim");
-			return clip;
-		}
         #endregion Quest Pen Stuff
 
         private void CheckRequirements()
 		{
 			warnings.Clear();
 			if (!AssetDatabase.IsValidFolder("Assets/VRLabs/Marker"))
-				warnings.Add("The folder at path 'Assets/VRLabs/Marker' could not be found. Make sure you are importing a Unity package and not moving the folder.");
+				warnings.Add("The folder at path 'Assets/VRLabs/Marker' could not be found. Make sure you are importing " +
+                    "a Unity package and not moving the folder.");
 
 			if (descriptor == null)
-				warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, or create an avatar descriptor here.");
+				warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, " +
+                    "or create an avatar descriptor here.");
 			else
 			{
-				if (descriptor.expressionParameters != null && descriptor.expressionParameters.CalcTotalCost() > (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount))
+				if (descriptor.expressionParameters != null 
+					&& descriptor.expressionParameters.CalcTotalCost() > (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount))
 				{
-					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. You need " + (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount) + " or less bits of parameter memory utilized.");
+					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. " +
+                        "You need " + (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount) + " or less bits of parameter " +
+                        "memory utilized.");
 				}
 				if (descriptor.expressionsMenu != null)
 				{
@@ -1114,19 +1070,24 @@ namespace VRLabs.Marker
 					else
 					{
 						// check avatar is humanoid and layers are valid
-						if (descriptor.baseAnimationLayers.Length < 5) // check all humanoid layers exist (since they can disappear when avatar rig is set human -> generic -> human)
+						// check all humanoid layers exist (since they can disappear when avatar rig is set human -> generic -> human)
+						if (descriptor.baseAnimationLayers.Length < 5) 
 						{
-							warnings.Add("You are missing the humanoid playable layers in your avatar descriptor. Try clicking 'Reset to Default' in your avatar descriptor.");
+							warnings.Add("You are missing the humanoid playable layers in your avatar descriptor. " +
+                                "Try clicking 'Reset to Default' in your avatar descriptor.");
 						}
 						else if (!descriptor.baseAnimationLayers[2].isDefault) // check gesture layer validity
 						{
-							if (descriptor.baseAnimationLayers[2].animatorController != null && descriptor.baseAnimationLayers[2].animatorController.name != "")
+							if (descriptor.baseAnimationLayers[2].animatorController != null 
+								&& descriptor.baseAnimationLayers[2].animatorController.name != "")
 							{
 								if (descriptor.baseAnimationLayers[2].animatorController is AnimatorController gesture)
 								{
 									if (gesture.layers[0].avatarMask == null || gesture.layers[0].avatarMask.name == "")
 									{
-										warnings.Add("The first layer of your avatar's gesture layer is missing a mask. Try setting a mask, or using a copy of the VRCSDK gesture controller, or removing the controller from your avatar descriptor.");
+										warnings.Add("The first layer of your avatar's gesture layer is missing a mask. Try " +
+                                            "setting a mask, or using a copy of the VRCSDK gesture controller, or removing the " +
+                                            "controller from your avatar descriptor.");
 									}
 								}
 								else
@@ -1136,23 +1097,30 @@ namespace VRLabs.Marker
 							}
 						}
 						// check bones are mapped
-						if (useIndexFinger && ((avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal) == null)))
+						if (useIndexFinger 
+							&& ((avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) == null) 
+							|| (avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal) == null)))
 						{
 							warnings.Add("Your avatar rig's left and/or right index finger's distal bone is unmapped!");
 						}
-						if ((avatar.GetBoneTransform(HumanBodyBones.LeftHand) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightHand) == null))
+						if ((avatar.GetBoneTransform(HumanBodyBones.LeftHand) == null) 
+							|| (avatar.GetBoneTransform(HumanBodyBones.RightHand) == null))
                         {
 							warnings.Add("Your avatar rig's left and/or right hand is unmapped!");
 						}
 						if (localSpace)
 						{
-							if ((avatar.GetBoneTransform(HumanBodyBones.Hips) == null) || (avatar.GetBoneTransform(HumanBodyBones.Chest) == null) || (avatar.GetBoneTransform(HumanBodyBones.Head) == null) || (avatar.GetBoneTransform(HumanBodyBones.Neck) == null))
+							if ((avatar.GetBoneTransform(HumanBodyBones.Hips) == null) 
+								|| (avatar.GetBoneTransform(HumanBodyBones.Chest) == null) 
+								|| (avatar.GetBoneTransform(HumanBodyBones.Head) == null) 
+								|| (avatar.GetBoneTransform(HumanBodyBones.Neck) == null))
 							{
 								warnings.Add("Your avatar rig's hips, chest, neck, and/or head is unmapped!");
 							}
 							if (localSpaceFullBody == 1)
 							{
-								if ((avatar.GetBoneTransform(HumanBodyBones.LeftFoot) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightFoot) == null))
+								if ((avatar.GetBoneTransform(HumanBodyBones.LeftFoot) == null) 
+									|| (avatar.GetBoneTransform(HumanBodyBones.RightFoot) == null))
 								{
 									warnings.Add("Your avatar rig's left and/or right foot is unmapped!");
 								}
@@ -1185,7 +1153,9 @@ namespace VRLabs.Marker
 
 		private void ChangeGestureCondition(AnimatorController controller, int layerToModify, int newGesture)
 		{   // helper function: change gesture condition, in all transitions of 1 layer of controller
-			AnimatorStateTransition[] transitions = controller.layers[layerToModify].stateMachine.states.SelectMany(x => x.state.transitions).ToArray();
+			AnimatorStateTransition[] transitions = controller.layers[layerToModify]
+				.stateMachine.states.SelectMany(x => x.state.transitions).ToArray();
+
 			AnimatorCondition[] conditions;
 			for (int i = 0; i < transitions.Length; i++)
 			{
