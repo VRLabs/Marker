@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: M_Menu Space
   m_EditorClassIdentifier: 
   controls:
-  - name: Avatar
+  - name: <color=#FFFFFF>Avatar
     icon: {fileID: 2800000, guid: 32d3ac95f31119842a7b431ac607c91b, type: 3}
     type: 102
     parameter:
@@ -23,7 +23,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Hips
+  - name: <color=#FFFFFF>Hips
     icon: {fileID: 2800000, guid: c3e80cdb0a10e2940bb284c32d5023f9, type: 3}
     type: 102
     parameter:
@@ -33,7 +33,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Chest
+  - name: <color=#FFFFFF>Chest
     icon: {fileID: 2800000, guid: 2f7e70aae405fcd41a7f28837afdef1b, type: 3}
     type: 102
     parameter:
@@ -43,7 +43,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Head
+  - name: <color=#FFFFFF>Head
     icon: {fileID: 2800000, guid: 9ca9a248d479b4d4f8f7b44774cc136b, type: 3}
     type: 102
     parameter:
@@ -53,7 +53,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Left hand
+  - name: <color=#FFFFFF>Left hand
     icon: {fileID: 2800000, guid: a1e053adcf2660f4b998ca4bf568e6d2, type: 3}
     type: 102
     parameter:
@@ -63,7 +63,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Right hand
+  - name: <color=#FFFFFF>Right hand
     icon: {fileID: 2800000, guid: bc4e919f9375dc2428868af168ee8019, type: 3}
     type: 102
     parameter:
@@ -73,7 +73,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Left foot
+  - name: <color=#FFFFFF>Left foot
     icon: {fileID: 2800000, guid: f361edbc9bda3ee48aeb46b147c9c319, type: 3}
     type: 102
     parameter:
@@ -83,7 +83,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Right foot
+  - name: <color=#FFFFFF>Right foot
     icon: {fileID: 2800000, guid: 118c446bddc848540a16397065ca1c22, type: 3}
     type: 102
     parameter:
