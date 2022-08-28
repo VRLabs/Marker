@@ -1134,6 +1134,7 @@ namespace VRLabs.Marker
             // assign back to controller
             AnimatorControllerLayer[] layers = controller.layers;
             layers[layerIdx] = markerLayer;
+            layers[layerIdx].defaultWeight = 1;
             controller.layers = layers;
 
             return controller;
