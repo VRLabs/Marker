@@ -394,11 +394,41 @@ namespace VRLabs.Marker
             if (isQuest)
             {
                 GenerateQuest(directory);
+
+                // add to avatar mask if necessary
+                AnimatorController questController = descriptor.baseAnimationLayers[4].animatorController as AnimatorController;
+                if (questController == null)
+                    return;
+
+                AnimatorControllerLayer[] layers = questController.layers;
+                AvatarMask mask = layers[0].avatarMask;
+                if (mask != null)
+                {
+                    string maskPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/FX_Master_Mask.asset");
+                    if (AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(mask), maskPath))
+                    {
+                        AvatarMask newMask = VRLabs.Marker.AvatarMaskFunctions.MergeAvatarMasks(
+                            VRLabs.Marker.AvatarMaskFunctions.GenerateMaskFromLayer(questController, questController.layers.Length-1, false),
+                            AssetDatabase.LoadAssetAtPath<AvatarMask>(maskPath)
+                        );
+                        layers[0].avatarMask = newMask;
+                    }
+                }
+
+                questController.layers = layers;
             }
             else
             {
                 GeneratePC(directory);
             }
+
+
+            // finishing touches
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            ((Marker)target).finished = true;
+            Debug.Log("Successfully generated Marker!");
         }
 
         void GeneratePC(string directory)
@@ -783,17 +813,6 @@ namespace VRLabs.Marker
 
             ((Marker)target).system = system;
             ((Marker)target).markerTarget = markerTarget;
-            ((Marker)target).finished = true;
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.Log("Successfully generated Marker!");
-        }
-
-        static AnimatorController GenerateControllerAndReturn(string path)
-        {
-            AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(path);
-            controller.layers = new AnimatorControllerLayer[0];
-            return controller;
         }
 
         private void CheckRequirements()
@@ -945,7 +964,6 @@ namespace VRLabs.Marker
         }
         
         #region Quest Pen Stuff
-
         void GenerateQuest(string directory)
         {
             // pen prefab
@@ -973,13 +991,9 @@ namespace VRLabs.Marker
                 penPrefab.transform.localRotation = Quaternion.identity;
             }
 
-            // animator
-            string controllerPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/MarkerFX.controller");
-            AnimatorController newController = GenerateControllerAndReturn(controllerPath);
-
-            string targetPath = penPrefab.transform.GetHierarchyPath(avatar.transform);
-            GenerateQuestPenAnimator(ref newController, penPrefab.transform, targetPath, directory);
-            ScriptFunctions.MergeController(descriptor, newController, ScriptFunctions.PlayableLayer.FX, directory);
+            // create new pen animator
+            AnimatorController penController = GenerateQuestPenAnimator(penPrefab.transform.GetHierarchyPath(avatar.transform), directory);
+            ScriptFunctions.MergeController(descriptor, penController, ScriptFunctions.PlayableLayer.FX, directory);
 
             // parameters
             VRCExpressionParameters.Parameter
@@ -991,62 +1005,77 @@ namespace VRLabs.Marker
             ScriptFunctions.AddParameter(descriptor, p_color, directory);
         }
 
-        void GenerateQuestPenAnimator(ref AnimatorController controller, Transform penPrefab, string targetPath, string directory)
+        AnimatorController GenerateQuestPenAnimator(string penPrefabPath, string directory)
         {
+            AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath($"{directory}/MarkerFX.controller");
+
             // animations
-            AnimationClip drawClip = GenerateQuestMarkerClip(targetPath, true, 9999);
-            AnimationClip noDrawClip = GenerateQuestMarkerClip(targetPath, false, 9999);
-            AnimationClip offClip = GenerateQuestMarkerClip(targetPath, false, 0);
+            AnimationClip drawClip = GenerateQuestMarkerClip(penPrefabPath, true, 9999);
+            AnimationClip noDrawClip = GenerateQuestMarkerClip(penPrefabPath, false, 9999);
+            AnimationClip clearClip = GenerateQuestMarkerClip(penPrefabPath, false, 0);
+            // TODO: all animations need to toggle on pen mesh
+            // TODO: create 'off' clip that disables pen mesh
 
             AssetDatabase.CreateAsset(drawClip, $"{directory}/M_Draw.anim");
             AssetDatabase.CreateAsset(noDrawClip, $"{directory}/M_NoDraw.anim");
-            AssetDatabase.CreateAsset(offClip, $"{directory}/M_Off.anim");
+            AssetDatabase.CreateAsset(clearClip, $"{directory}/M_Off.anim");
 
-
-            // parameters
+            // animator parameters
             string M_GESTURE_PARAM = leftHanded ? "GestureLeft" : "GestureRight";
             string M_COLOR_PARAM = "M_Color";
             string M_MARKER_PARAM = "M_Marker";
+            string M_MARKER_CLEAR_PARAM = "M_MarkerClear";
 
             controller.AddParameter(M_GESTURE_PARAM, AnimatorControllerParameterType.Int);
             controller.AddParameter(M_COLOR_PARAM, AnimatorControllerParameterType.Float);
             controller.AddParameter(M_MARKER_PARAM, AnimatorControllerParameterType.Bool);
-
+            controller.AddParameter(M_MARKER_CLEAR_PARAM, AnimatorControllerParameterType.Bool);
 
             // generate marker animator layer
             controller.AddLayer("M_Marker");
-            AnimatorControllerLayer markerLayer = controller.layers[controller.layers.Length - 1];
+            int layerIdx = controller.layers.Length - 1;
+            AnimatorControllerLayer markerLayer = controller.layers[layerIdx];
             {
-                // avatar mask
-                AvatarMask mask = CreateAvatarMask(penPrefab, directory);
-                markerLayer.avatarMask = mask;
-
                 // state machine default state positions
-                markerLayer.stateMachine.exitPosition = new Vector2(20, 0);
-                markerLayer.stateMachine.anyStatePosition = new Vector2(20, 40);
-                markerLayer.stateMachine.entryPosition = new Vector2(20, 80);
+                markerLayer.stateMachine.exitPosition = new Vector2(20, 290);
+                markerLayer.stateMachine.anyStatePosition = new Vector2(20, -40);
+                markerLayer.stateMachine.entryPosition = new Vector2(20, 0);
 
                 // animator states
                 AnimatorState offState = markerLayer.stateMachine.AddState(
-                    "M_Off", new Vector2(0, 130));
+                    "M_Off", new Vector2(0, 50));
                 offState.writeDefaultValues = wdSetting;
-                offState.motion = offClip;
+                offState.motion = noDrawClip;
                 offState.timeParameterActive = true;
                 offState.timeParameter = M_COLOR_PARAM;
 
                 AnimatorState drawState = markerLayer.stateMachine.AddState(
-                    "M_Draw", new Vector2(-150, 220));
+                    "M_Draw", new Vector2(-130, 120));
                 drawState.writeDefaultValues = wdSetting;
                 drawState.motion = drawClip;
                 drawState.timeParameterActive = true;
                 drawState.timeParameter = M_COLOR_PARAM;
 
                 AnimatorState noDrawState = markerLayer.stateMachine.AddState(
-                    "M_NoDraw", new Vector2(150, 220));
+                    "M_NoDraw", new Vector2(130, 120));
                 noDrawState.writeDefaultValues = wdSetting;
                 noDrawState.motion = noDrawClip;
                 noDrawState.timeParameterActive = true;
                 noDrawState.timeParameter = M_COLOR_PARAM;
+
+                AnimatorState clearState = markerLayer.stateMachine.AddState(
+                    "M_Clear", new Vector2(0, 190));
+                clearState.writeDefaultValues = wdSetting;
+                clearState.motion = clearClip;
+                clearState.timeParameterActive = true;
+                clearState.timeParameter = M_COLOR_PARAM;
+
+                // transitions out of MARKER_CLEAR
+                {
+                    AnimatorStateTransition exit = clearState.AddExitTransition();
+                    exit.duration = 0;
+                    exit.AddCondition(AnimatorConditionMode.IfNot, 1, M_MARKER_CLEAR_PARAM);
+                }
 
                 // transitions out of MARKER_OFF
                 {
@@ -1059,6 +1088,11 @@ namespace VRLabs.Marker
                     t1.duration = 0;
                     t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
                     t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
+
+                    AnimatorStateTransition t2 = offState.AddTransition(clearState);
+                    t2.duration = 0;
+                    t2.canTransitionToSelf = false;
+                    t2.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_CLEAR_PARAM);
                 }
 
                 // transitions out of MARKER_DRAW
@@ -1071,6 +1105,12 @@ namespace VRLabs.Marker
                     t1.duration = 0;
                     t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
                     t1.AddCondition(AnimatorConditionMode.NotEqual, gestureToDraw, M_GESTURE_PARAM);
+
+
+                    AnimatorStateTransition t2 = drawState.AddTransition(clearState);
+                    t2.duration = 0;
+                    t2.canTransitionToSelf = false;
+                    t2.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_CLEAR_PARAM);
                 }
 
                 // transitions out of MARKER_NO_DRAW
@@ -1083,27 +1123,20 @@ namespace VRLabs.Marker
                     t1.duration = 0;
                     t1.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_PARAM);
                     t1.AddCondition(AnimatorConditionMode.Equals, gestureToDraw, M_GESTURE_PARAM);
+
+                    AnimatorStateTransition t2 = noDrawState.AddTransition(clearState);
+                    t2.duration = 0;
+                    t2.canTransitionToSelf = false;
+                    t2.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_CLEAR_PARAM);
                 }
             }
 
             // assign back to controller
             AnimatorControllerLayer[] layers = controller.layers;
-            layers[0] = markerLayer;
+            layers[layerIdx] = markerLayer;
             controller.layers = layers;
-        }
 
-        static AvatarMask CreateAvatarMask(Transform penPrefab, string directory)
-        {
-            AvatarMask mask = new AvatarMask();
-            for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
-                mask.SetHumanoidBodyPartActive((AvatarMaskBodyPart)i, false);
-            mask.AddTransformPath(penPrefab, false);
-
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{directory}/MarkerMask.asset");
-            AssetDatabase.CreateAsset(mask, path);
-            EditorUtility.SetDirty(mask);
-
-            return mask;
+            return controller;
         }
 
         static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, float lifetime)
@@ -1208,7 +1241,6 @@ namespace VRLabs.Marker
 
             return clip;
         }
-
         #endregion Quest Pen Stuff
     }
 }
