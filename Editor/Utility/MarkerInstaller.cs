@@ -20,59 +20,55 @@ namespace VRLabs.Marker
         const string R_QUEST_MARKER_PATH = "Quest Marker/Marker";
         const float KSIVL_UNIT = 0.4156029f;
 
+        // animator parameters
+        const string M_COLOR_PARAM = "VRLabs/Marker/Color";
+        const string M_MARKER_PARAM = "VRLabs/Marker/Enable";
+        const string M_MARKER_CLEAR_PARAM = "VRLabs/Marker/Clear";
+
         public static void Generate(VRCAvatarDescriptor descriptor, ref Marker marker, bool installQuest)
         {
+            // Ensure we aren't installing more than once
             Uninstall(descriptor);
 
             // Unique directory setup, named after avatar
             Directory.CreateDirectory(A_GENERATED_ASSETS_DIR);
             AssetDatabase.Refresh();
+
             // Folder name cannot contain these chars
             string cleanedName = string.Join("", descriptor.name.Split('/', '?', '<', '>', '\\', ':', '*', '|', '\"'));
-
-            Debug.Log($"{A_GENERATED_ASSETS_DIR}/{cleanedName}");
-
             string guid = AssetDatabase.CreateFolder(A_GENERATED_ASSETS_DIR, cleanedName);
             string directory = AssetDatabase.GUIDToAssetPath(guid);
 
-            AnimatorController generatedController = null;
+            // Setup marker and return generated controller
+            AnimatorController generatedController = installQuest
+                ? GenerateQuest(descriptor, ref marker, directory)
+                : GeneratePC(descriptor, ref marker, directory);
 
-            // split to PC/Quest
-            if (installQuest) {
-                generatedController = GenerateQuest(descriptor, ref marker, directory);
-            } else {
-                generatedController = GeneratePC(descriptor, ref marker, directory);
-            }
-
-            if (generatedController != null)
-            {
-                // avatar mask if necessary
-                AnimatorControllerLayer[] layers = generatedController.layers;
-                AvatarMask mask = layers[0].avatarMask;
-
-                if (mask != null)
-                {
-                    layers[0].avatarMask = AvatarMaskFunctions.GenerateFXMasterMask(descriptor, directory);
-                    generatedController.layers = layers;
-                }
-
-                // merge
-                ScriptFunctions.MergeController(
-                    descriptor,
-                    generatedController,
-                    ScriptFunctions.PlayableLayer.FX,
-                    directory
-                );
-
-                // finishing touches
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-
-                marker.finished = true;
-                Debug.Log("Successfully generated Marker!");
-            } else {
+            if(generatedController == null)
                 throw new NullReferenceException("Failed to generate marker controller");
+
+            // Generate and apply master Avatar Mask
+            if (marker.generateMasterMask)
+            {
+                AnimatorControllerLayer[] layers = generatedController.layers;
+                layers[0].avatarMask = AvatarMaskFunctions.GenerateFXMasterMask(descriptor, directory);
+                generatedController.layers = layers;
             }
+
+            // merge
+            ScriptFunctions.MergeController(
+                descriptor,
+                generatedController,
+                ScriptFunctions.PlayableLayer.FX,
+                directory
+            );
+
+            // finishing touches
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            marker.finished = true;
+            Debug.Log("Successfully generated Marker!");
         }
 
         public static void Uninstall(VRCAvatarDescriptor descriptor)
@@ -570,12 +566,8 @@ namespace VRLabs.Marker
             AssetDatabase.CreateAsset(clearClip, $"{directory}/M_Clear.anim");
             AssetDatabase.CreateAsset(offClip, $"{directory}/M_Off.anim");
 
-            // animator parameters
+            // parameters
             string M_GESTURE_PARAM = marker.leftHanded ? "GestureLeft" : "GestureRight";
-            string M_COLOR_PARAM = "M_Color";
-            string M_MARKER_PARAM = "M_Marker";
-            string M_MARKER_CLEAR_PARAM = "M_MarkerClear";
-
             controller.AddParameter(M_GESTURE_PARAM, AnimatorControllerParameterType.Int);
             controller.AddParameter(M_MARKER_PARAM, AnimatorControllerParameterType.Bool);
             controller.AddParameter(M_COLOR_PARAM, AnimatorControllerParameterType.Float);
@@ -590,34 +582,45 @@ namespace VRLabs.Marker
                 markerLayer.stateMachine.anyStatePosition = new Vector2(20, -40);
                 markerLayer.stateMachine.entryPosition = new Vector2(20, 0);
 
+
                 // animator states
-                AnimatorState offState = markerLayer.stateMachine.AddState(
-                    "M_Off", new Vector2(0, 50));
-                offState.writeDefaultValues = marker.wdSetting;
-                offState.motion = offClip;
-                offState.timeParameterActive = true;
-                offState.timeParameter = M_COLOR_PARAM;
+                AnimatorState offState = new AnimatorState() {
+                    name="M_Off",
+                    writeDefaultValues = marker.wdSetting,
+                    motion = offClip,
+                    timeParameterActive = true,
+                    timeParameter = M_COLOR_PARAM
+                };
+                markerLayer.stateMachine.AddState(offState, new Vector2(0, 50));
 
-                AnimatorState drawState = markerLayer.stateMachine.AddState(
-                    "M_Draw", new Vector2(-130, 120));
-                drawState.writeDefaultValues = marker.wdSetting;
-                drawState.motion = drawClip;
-                drawState.timeParameterActive = true;
-                drawState.timeParameter = M_COLOR_PARAM;
+                AnimatorState drawState = new AnimatorState()
+                {
+                    name = "M_Draw",
+                    writeDefaultValues = marker.wdSetting,
+                    motion = drawClip,
+                    timeParameterActive = true,
+                    timeParameter = M_COLOR_PARAM
+                };
+                markerLayer.stateMachine.AddState(drawState, new Vector2(-130, 120));
 
-                AnimatorState noDrawState = markerLayer.stateMachine.AddState(
-                    "M_NoDraw", new Vector2(130, 120));
-                noDrawState.writeDefaultValues = marker.wdSetting;
-                noDrawState.motion = noDrawClip;
-                noDrawState.timeParameterActive = true;
-                noDrawState.timeParameter = M_COLOR_PARAM;
+                AnimatorState noDrawState = new AnimatorState() {
+                    name="M_NoDraw",
+                    writeDefaultValues = marker.wdSetting,
+                    motion = noDrawClip,
+                    timeParameterActive = true,
+                    timeParameter = M_COLOR_PARAM
+                };
+                markerLayer.stateMachine.AddState(noDrawState, new Vector2(130, 120));
 
-                AnimatorState clearState = markerLayer.stateMachine.AddState(
-                    "M_Clear", new Vector2(0, 190));
-                clearState.writeDefaultValues = marker.wdSetting;
-                clearState.motion = clearClip;
-                clearState.timeParameterActive = true;
-                clearState.timeParameter = M_COLOR_PARAM;
+                AnimatorState clearState = new AnimatorState() {
+                    name="M_Clear",
+                    writeDefaultValues = marker.wdSetting,
+                    motion = clearClip,
+                    timeParameterActive = true,
+                    timeParameter = M_COLOR_PARAM
+                };
+                markerLayer.stateMachine.AddState(clearState, new Vector2(0, 190));
+
 
                 // transitions out of MARKER_CLEAR
                 {
@@ -625,6 +628,7 @@ namespace VRLabs.Marker
                     exit.duration = 0;
                     exit.AddCondition(AnimatorConditionMode.IfNot, 1, M_MARKER_CLEAR_PARAM);
                 }
+
 
                 // transitions out of MARKER_OFF
                 {
@@ -644,6 +648,7 @@ namespace VRLabs.Marker
                     t2.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_CLEAR_PARAM);
                 }
 
+
                 // transitions out of MARKER_DRAW
                 {
                     AnimatorStateTransition t = drawState.AddTransition(offState);
@@ -661,6 +666,7 @@ namespace VRLabs.Marker
                     t2.canTransitionToSelf = false;
                     t2.AddCondition(AnimatorConditionMode.If, 1, M_MARKER_CLEAR_PARAM);
                 }
+
 
                 // transitions out of MARKER_NO_DRAW
                 {

@@ -26,6 +26,7 @@ namespace VRLabs.Marker
         public int localSpaceFullBody, gestureToDraw;
 
         public bool isQuest;
+        public bool generateMasterMask;
 
         private bool isWdAutoSet;
         private readonly ScriptFunctions.PlayableLayer[] playablesUsedPC = {
@@ -48,6 +49,7 @@ namespace VRLabs.Marker
             if (((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>() != null)
                 descriptor = ((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>();
 
+            generateMasterMask = ((Marker)target).generateMasterMask;
             leftHanded = ((Marker)target).leftHanded;
             wdSetting = ((Marker)target).wdSetting;
             brushSize = ((Marker)target).brushSize;
@@ -124,6 +126,12 @@ namespace VRLabs.Marker
                         "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
                 }
 
+                generateMasterMask = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Generate Master Mask",
+                        "Enable this if you want to generate a master mask for your FX layer - if you animate transforms on your Gesture layer" +
+                        ", you will most likely want to check this")
+                    , generateMasterMask
+                );
 
                 string[] gestureOptions = new string[] {
                     null, "Fist", "Openhand", "Fingerpoint", "Victory", "Rock'n'Roll", "Handgun", "Thumbs up"
