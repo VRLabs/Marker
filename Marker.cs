@@ -17,9 +17,11 @@ namespace VRLabs.Marker
 		public Transform markerTarget, markerModel, system;
 		public bool finished = false;
 
+		public bool generateMasterMask = true;
+
 		public void Update()
 		{
-			if (finished) // constantly uniformly scale Draw and Eraser (System) with MarkerTarget
+			if (finished && system != null) // constantly uniformly scale Draw and Eraser (System) with MarkerTarget
 			{
 				Vector3 scale = system.localScale;
 				Transform eraser = system.Find("Eraser");
