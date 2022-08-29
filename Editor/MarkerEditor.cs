@@ -28,8 +28,15 @@ namespace VRLabs.Marker
         private bool isWdAutoSet;
         private readonly ScriptFunctions.PlayableLayer[] playablesUsedPC = {
             ScriptFunctions.PlayableLayer.Gesture, ScriptFunctions.PlayableLayer.FX };
-        private readonly ScriptFunctions.PlayableLayer[] playablesUsedQuest = { ScriptFunctions.PlayableLayer.Gesture };
+        private readonly ScriptFunctions.PlayableLayer[] playablesUsedQuest = { 
+            ScriptFunctions.PlayableLayer.Gesture };
         const float KSIVL_UNIT = 0.4156029f;
+
+        const string R_ICON_DIR = "Shared/Icons/Editor Icons";
+        const string A_PC_MARKER_DIR = "Assets/VRLabs/Marker/Resources/PC Marker";
+        const string A_QUEST_MARKER_DIR = "Assets/VRLabs/Marker/Resources/Quest Marker";
+        const string A_GENERATED_ASSETS_DIR = "Assets/VRLabs/GeneratedAssets/Marker";
+        const string A_SHARED_RESOURCES_DIR = "Assets/VRLabs/Marker/Resources/Shared/Default";
 
         Texture2D platformIcon;
         bool isQuest;
@@ -37,7 +44,7 @@ namespace VRLabs.Marker
         private void OnEnable()
         {
             isQuest = EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android;
-            platformIcon = Resources.Load<Texture2D>(isQuest ? "Icons/Editor Icons/Meta" : "Icons/Editor Icons/Windows");
+            platformIcon = Resources.Load<Texture2D>(isQuest ? $"{R_ICON_DIR}/Meta" : $"{R_ICON_DIR}/Windows");
         }
 
         public void Reset()
@@ -383,45 +390,42 @@ namespace VRLabs.Marker
         {
             Uninstall();
             // Unique directory setup, named after avatar
-            Directory.CreateDirectory("Assets/VRLabs/GeneratedAssets/Marker/");
+            Directory.CreateDirectory(A_GENERATED_ASSETS_DIR);
             AssetDatabase.Refresh();
             // Folder name cannot contain these chars
             string cleanedName = string.Join("", descriptor.name.Split('/', '?', '<', '>', '\\', ':', '*', '|', '\"'));
-            string guid = AssetDatabase.CreateFolder("Assets/VRLabs/GeneratedAssets/Marker", cleanedName);
-            string directory = AssetDatabase.GUIDToAssetPath(guid) + "/";
+
+            Debug.Log($"{A_GENERATED_ASSETS_DIR}/{cleanedName}");
+
+            string guid = AssetDatabase.CreateFolder(A_GENERATED_ASSETS_DIR, cleanedName);
+            string directory = AssetDatabase.GUIDToAssetPath(guid);
 
             // split to PC/Quest
-            if (isQuest)
-            {
+            if (isQuest) {
                 GenerateQuest(directory);
 
                 // add to avatar mask if necessary
-                AnimatorController questController = descriptor.baseAnimationLayers[4].animatorController as AnimatorController;
+                AnimatorController questController = descriptor.baseAnimationLayers[4].animatorController 
+                    as AnimatorController;
+
                 if (questController == null)
                     return;
 
                 AnimatorControllerLayer[] layers = questController.layers;
                 AvatarMask mask = layers[0].avatarMask;
+
                 if (mask != null)
                 {
-                    string maskPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/FX_Master_Mask.asset");
-                    if (AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(mask), maskPath))
+                    //string newMaskPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/FX_Master_Mask.asset");
+                    layers[0].avatarMask = AvatarMaskFunctions.GenerateFXMasterMask(descriptor, directory);
+                    /*if (AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(mask), newMaskPath))
                     {
-                        AvatarMask newMask = VRLabs.Marker.AvatarMaskFunctions.MergeAvatarMasks(
-                            VRLabs.Marker.AvatarMaskFunctions.GenerateMaskFromLayer(questController, questController.layers.Length-1, false),
-                            AssetDatabase.LoadAssetAtPath<AvatarMask>(maskPath)
-                        );
-                        layers[0].avatarMask = newMask;
-                    }
+                    }*/
+                    questController.layers = layers;
                 }
-
-                questController.layers = layers;
-            }
-            else
-            {
+            } else {
                 GeneratePC(directory);
             }
-
 
             // finishing touches
             AssetDatabase.SaveAssets();
@@ -439,13 +443,13 @@ namespace VRLabs.Marker
             if (useIndexFinger)
             {
                 AssetDatabase.CopyAsset(
-                    "Assets/VRLabs/Marker/Resources/M_FX (Finger).controller",
+                    $"{A_PC_MARKER_DIR}/M_FX (Finger).controller",
                     directory + "FXtemp.controller");
             }
             else
             {
                 AssetDatabase.CopyAsset(
-                    "Assets/VRLabs/Marker/Resources/M_FX.controller",
+                    $"{A_PC_MARKER_DIR}/M_FX.controller",
                     directory + "FXtemp.controller");
             }
 
@@ -513,7 +517,7 @@ namespace VRLabs.Marker
 
             // Gesture layer
             AssetDatabase.CopyAsset(
-                "Assets/VRLabs/Marker/Resources/M_Gesture.controller",
+                $"{A_PC_MARKER_DIR}/M_Gesture.controller",
                 directory + "gestureTemp.controller"); // to modify
             AnimatorController gesture = AssetDatabase.LoadAssetAtPath(
                 directory + "gestureTemp.controller",
@@ -524,7 +528,7 @@ namespace VRLabs.Marker
                 || descriptor.baseAnimationLayers[2].animatorController == null)
             {
                 AssetDatabase.CopyAsset(
-                    "Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller",
+                    $"{A_SHARED_RESOURCES_DIR}/Default/M_DefaultGesture.controller",
                     directory + "Gesture.controller");
                 AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(
                     directory + "Gesture.controller", typeof(AnimatorController)
@@ -549,14 +553,14 @@ namespace VRLabs.Marker
                     if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture")
                     {
                         gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(
-                            "Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture (Finger).anim",
+                            $"{A_PC_MARKER_DIR}/Animations/Gesture/M_Gesture (Finger).anim",
                             typeof(AnimationClip)
                         ) as AnimationClip;
                     }
                     else if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture Draw")
                     {
                         gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(
-                            "Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture Draw (Finger).anim",
+                            $"{A_PC_MARKER_DIR}/Animations/Gesture/M_Gesture Draw (Finger).anim",
                             typeof(AnimationClip)
                         ) as AnimationClip;
                     }
@@ -641,7 +645,7 @@ namespace VRLabs.Marker
             ScriptFunctions.AddParameter(descriptor, p_menu, directory);
 
             // handle menu instancing
-            AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Menu.asset", directory + "Marker Menu.asset");
+            AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu.asset", directory + "Marker Menu.asset");
             VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(
                 directory + "Marker Menu.asset", typeof(VRCExpressionsMenu)
             ) as VRCExpressionsMenu;
@@ -657,7 +661,7 @@ namespace VRLabs.Marker
             else
             {
                 AssetDatabase.CopyAsset(
-                    "Assets/VRLabs/Marker/Resources/M_Menu Space.asset",
+                    $"{A_PC_MARKER_DIR}/M_Menu Space.asset",
                     directory + "Marker Space Submenu.asset");
                 VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(
                     directory + "Marker Space Submenu.asset", typeof(VRCExpressionsMenu)
@@ -683,7 +687,7 @@ namespace VRLabs.Marker
             VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter
             { name = "M_Menu" };
             Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(
-                "Assets/VRLabs/Marker/Resources/Icons/M_Icon_Menu.png",
+                $"{A_SHARED_RESOURCES_DIR}/Icons/M_Icon_Menu.png",
                 typeof(Texture2D)
             ) as Texture2D;
             ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
@@ -992,8 +996,19 @@ namespace VRLabs.Marker
             }
 
             // create new pen animator
-            AnimatorController penController = GenerateQuestPenAnimator(penPrefab.transform.GetHierarchyPath(avatar.transform), directory);
-            ScriptFunctions.MergeController(descriptor, penController, ScriptFunctions.PlayableLayer.FX, directory);
+            AnimatorController penController = GenerateQuestPenAnimator(
+                penPrefab.transform.GetHierarchyPath(avatar.transform), 
+                directory
+            );
+
+            // why does it delete my shit?
+            // update: it no longer deletes my shit :peepowicked:
+            ScriptFunctions.MergeController(
+                descriptor, 
+                penController, 
+                ScriptFunctions.PlayableLayer.FX, 
+                directory
+            );
 
             // parameters
             VRCExpressionParameters.Parameter
@@ -1027,13 +1042,12 @@ namespace VRLabs.Marker
             string M_MARKER_CLEAR_PARAM = "M_MarkerClear";
 
             controller.AddParameter(M_GESTURE_PARAM, AnimatorControllerParameterType.Int);
-            controller.AddParameter(M_COLOR_PARAM, AnimatorControllerParameterType.Float);
             controller.AddParameter(M_MARKER_PARAM, AnimatorControllerParameterType.Bool);
+            controller.AddParameter(M_COLOR_PARAM, AnimatorControllerParameterType.Float);
             controller.AddParameter(M_MARKER_CLEAR_PARAM, AnimatorControllerParameterType.Bool);
 
             // generate marker animator layer
-            controller.AddLayer("M_Marker");
-            int layerIdx = controller.layers.Length - 1;
+            int layerIdx = 0;
             AnimatorControllerLayer markerLayer = controller.layers[layerIdx];
             {
                 // state machine default state positions
@@ -1135,11 +1149,12 @@ namespace VRLabs.Marker
             AnimatorControllerLayer[] layers = controller.layers;
             layers[layerIdx] = markerLayer;
             layers[layerIdx].defaultWeight = 1;
+            layers[layerIdx].name = "M_Marker";
             controller.layers = layers;
 
             return controller;
         }
-
+        
         static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, float lifetime)
         {
             AnimationClip clip = new AnimationClip();

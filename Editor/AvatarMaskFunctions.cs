@@ -13,10 +13,12 @@ using System.Linq;
 using VRC.SDK3.Avatars.Components;
 #endif
 
-namespace VRLabs.Marker {
+namespace VRLabs.Marker
+{
     public static class AvatarMaskFunctions
     {
-        public static void ClearAllMasks(AnimatorController controller) {
+        public static void ClearAllMasks(AnimatorController controller)
+        {
             if (controller == null)
                 return;
 
@@ -29,23 +31,29 @@ namespace VRLabs.Marker {
             controller.layers = layers;
         }
 
-        static List<AnimationClip> GetAnimationsInMachine(AnimatorStateMachine machine) {
+        static List<AnimationClip> GetAnimationsInMachine(AnimatorStateMachine machine)
+        {
             List<AnimationClip> clips = new List<AnimationClip>();
 
-            for (int stateIdx = 0; stateIdx < machine.states.Length; stateIdx++) {
+            for (int stateIdx = 0; stateIdx < machine.states.Length; stateIdx++)
+            {
                 Motion motion = machine.states[stateIdx].state.motion;
                 if (motion == null)
                     continue;
 
                 BlendTree bt = motion as BlendTree;
-                if (bt == null) {
+                if (bt == null)
+                {
                     clips.Add((AnimationClip)motion);
-                } else {
+                }
+                else
+                {
                     clips = clips.Concat(GetClipsFromBlendTree(bt)).ToList();
                 }
             }
 
-            for (int machineIdx = 0; machineIdx < machine.stateMachines.Length; machineIdx++) {
+            for (int machineIdx = 0; machineIdx < machine.stateMachines.Length; machineIdx++)
+            {
                 AnimatorStateMachine curMachine = machine.stateMachines[machineIdx].stateMachine;
                 List<AnimationClip> clipsInMachine = GetAnimationsInMachine(curMachine);
                 clips = clips.Concat(clipsInMachine).ToList();
@@ -54,15 +62,20 @@ namespace VRLabs.Marker {
             return clips;
         }
 
-        static List<AnimationClip> GetClipsFromBlendTree(BlendTree bt) {
+        static List<AnimationClip> GetClipsFromBlendTree(BlendTree bt)
+        {
             List<AnimationClip> clips = new List<AnimationClip>();
 
             ChildMotion[] children = bt.children;
-            for (int i = 0; i < children.Length; i++) {
+            for (int i = 0; i < children.Length; i++)
+            {
                 BlendTree sbt = children[i].motion as BlendTree;
-                if (sbt == null) {
+                if (sbt == null)
+                {
                     clips.Add((AnimationClip)children[i].motion);
-                } else {
+                }
+                else
+                {
                     clips = clips.Concat(GetClipsFromBlendTree(sbt)).ToList();
                 }
             }
@@ -96,7 +109,8 @@ namespace VRLabs.Marker {
         {
             List<string> oldPaths = GetMaskPaths(avatarMask);
             List<int> oldBones = GetHumanoidBones(avatarMask);
-            foreach (AvatarMask currentMask in existingMasks) {
+            foreach (AvatarMask currentMask in existingMasks)
+            {
                 List<string> curPaths = GetMaskPaths(currentMask);
                 List<int> curBones = GetHumanoidBones(currentMask);
                 if (curPaths.SequenceEqual(oldPaths) && curBones.SequenceEqual(oldBones))
@@ -108,7 +122,8 @@ namespace VRLabs.Marker {
             List<int> GetHumanoidBones(AvatarMask mask)
             {
                 List<int> humanoidBones = new List<int>();
-                for (int i = 0; i < ((int)AvatarMaskBodyPart.LastBodyPart); i++) {
+                for (int i = 0; i < ((int)AvatarMaskBodyPart.LastBodyPart); i++)
+                {
                     if (mask.GetHumanoidBodyPartActive((AvatarMaskBodyPart)i))
                         humanoidBones.Add(i);
                 }
@@ -125,15 +140,19 @@ namespace VRLabs.Marker {
             }
         }
 
-        static List<string> GetPathsInAnimation(AnimationClip clip, bool maskTransformsOnly) {
+        static List<string> GetPathsInAnimation(AnimationClip clip, bool maskTransformsOnly)
+        {
             List<string> paths = new List<string>();
 
-            if (clip != null) {
-                foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip)) {
+            if (clip != null)
+            {
+                foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
+                {
                     if (!maskTransformsOnly || binding.propertyName.Contains("m_LocalPosition")
                         || binding.propertyName.Contains("m_localEulerAngles")
                         || binding.propertyName.Contains("m_LocalScale")
-                    ) {
+                    )
+                    {
                         paths.Add(binding.path);
                     }
                 }
@@ -161,9 +180,11 @@ namespace VRLabs.Marker {
         }
 
 #if VRC_SDK_VRCSDK3
-        public static AvatarMask GenerateFXMasterMask(VRCAvatarDescriptor descriptor, string directory) {
+        public static AvatarMask GenerateFXMasterMask(VRCAvatarDescriptor descriptor, string directory)
+        {
             // lmao wyd 
-            if (!descriptor.customizeAnimationLayers || descriptor.baseAnimationLayers.Count() < 1) {
+            if (!descriptor.customizeAnimationLayers || descriptor.baseAnimationLayers.Count() < 1)
+            {
                 Debug.LogWarning("Custom animator layers are not enabled");
                 return null;
             }
@@ -193,7 +214,8 @@ namespace VRLabs.Marker {
             // 2. because masked transforms just turn into strings anyway we just inject our transform path into the list lmao
             // 3. add to dictionary
             GameObject placeholder = new GameObject();
-            for (int i = 0; i < allTransformPaths.Count; i++) {
+            for (int i = 0; i < allTransformPaths.Count; i++)
+            {
                 mask.AddTransformPath(placeholder.transform);
                 mask.SetTransformPath(i, allTransformPaths[i]);
                 maskDict[allTransformPaths[i]] = i;
@@ -202,12 +224,16 @@ namespace VRLabs.Marker {
             // 1. get all animation clips in the controller
             // 2. for each animation clip, get the paths of all animated properties
             // 3. disable the paths of the animated properties
-            foreach (AnimationClip animation in gesture.animationClips) {
+            foreach (AnimationClip animation in gesture.animationClips)
+            {
                 foreach (string path in GetPathsInAnimation(animation, false))
                 {
-                    if (maskDict.ContainsKey(path)) {
+                    if (maskDict.ContainsKey(path))
+                    {
                         mask.SetTransformActive(maskDict[path], false);
-                    } else {
+                    }
+                    else
+                    {
                         mask.AddTransformPath(placeholder.transform);
                         mask.SetTransformPath(mask.transformCount - 1, path);
                         mask.SetTransformActive(mask.transformCount - 1, false);
@@ -228,26 +254,96 @@ namespace VRLabs.Marker {
         }
 #endif
 
-        public static AvatarMask MergeAvatarMasks(AvatarMask maskToMergeFrom, AvatarMask maskToMergeTo)
+        public enum AvatarMaskOverwriteMode
+        {
+            OverwriteAll,
+            OverwriteNone,
+            OverwriteOnlyActive,
+            OverwriteOnlyInactive,
+        }
+
+        public static void MergeAvatarMasks(AvatarMask maskToMergeFrom,
+            ref AvatarMask maskToMergeTo, AvatarMaskOverwriteMode xformOverwriteMode, AvatarMaskOverwriteMode boneOverwiteMode)
         {
             EditorUtility.SetDirty(maskToMergeTo);
 
-            GameObject placeholder = new GameObject();
-            for (int i = 0; i < maskToMergeFrom.transformCount; i++)
+            // map the old mask
+            Dictionary<string, int> mergeToPaths = new Dictionary<string, int>();
+            foreach (int index in Enumerable.Range(0, maskToMergeTo.transformCount))
             {
-                maskToMergeTo.AddTransformPath(placeholder.transform);
-                maskToMergeTo.SetTransformPath(maskToMergeTo.transformCount - 1, maskToMergeFrom.GetTransformPath(i));
+                mergeToPaths[maskToMergeTo.GetTransformPath(index)] = index;
+            }
+
+            // transforms
+            GameObject placeholder = new GameObject();
+            for (int tIdx = 0; tIdx < maskToMergeFrom.transformCount; tIdx++)
+            {
+                // check if current transform exists in old mask
+                //      if exists and we overwrite, overwrite
+                //      if exists and we don't overwrite, continue
+                //      if !exists, add to end
+
+                string path = maskToMergeFrom.GetTransformPath(tIdx);
+                bool isActive = maskToMergeFrom.GetTransformActive(tIdx);
+
+                bool existsInOld = mergeToPaths.TryGetValue(path, out int oldIndex);
+
+                if (existsInOld && xformOverwriteMode != AvatarMaskOverwriteMode.OverwriteNone)
+                {
+                    switch (xformOverwriteMode)
+                    {
+                        case AvatarMaskOverwriteMode.OverwriteAll:
+                            maskToMergeTo.SetTransformActive(oldIndex, isActive);
+                            break;
+                        case AvatarMaskOverwriteMode.OverwriteOnlyActive:
+                            if (maskToMergeTo.GetTransformActive(oldIndex))
+                            {
+                                maskToMergeTo.SetTransformActive(oldIndex, isActive);
+                            }
+                            break;
+                        case AvatarMaskOverwriteMode.OverwriteOnlyInactive:
+                            if (!maskToMergeTo.GetTransformActive(oldIndex))
+                            {
+                                maskToMergeTo.SetTransformActive(oldIndex, isActive);
+                            }
+                            break;
+                    }
+                }
+                else if (!existsInOld)
+                {
+                    maskToMergeTo.AddTransformPath(placeholder.transform);
+                    maskToMergeTo.SetTransformActive(maskToMergeTo.transformCount - 1, isActive);
+                }
             }
             GameObject.DestroyImmediate(placeholder);
 
-            return maskToMergeTo;
-        }
+            // bones only if replace
+            if (boneOverwiteMode != AvatarMaskOverwriteMode.OverwriteNone)
+            {
+                for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
+                {
+                    AvatarMaskBodyPart currentBodyPart = (AvatarMaskBodyPart)i;
+                    bool newBodyPartActive = maskToMergeFrom.GetHumanoidBodyPartActive(currentBodyPart);
 
-        static void GetAllTransformPaths(Transform relative, Transform transform, ref List<string> paths) {
-            if (transform != null) {
-                paths.Add(transform.GetHierarchyPath(relative));
-                foreach (Transform t in transform.GetComponentInChildren<Transform>())
-                    GetAllTransformPaths(relative, t, ref paths);
+                    switch (boneOverwiteMode)
+                    {
+                        case AvatarMaskOverwriteMode.OverwriteAll:
+                            maskToMergeTo.SetHumanoidBodyPartActive(currentBodyPart, newBodyPartActive);
+                            break;
+                        case AvatarMaskOverwriteMode.OverwriteOnlyActive:
+                            if (maskToMergeTo.GetHumanoidBodyPartActive(currentBodyPart))
+                            {
+                                maskToMergeTo.SetHumanoidBodyPartActive(currentBodyPart, newBodyPartActive);
+                            }
+                            break;
+                        case AvatarMaskOverwriteMode.OverwriteOnlyInactive:
+                            if (!maskToMergeTo.GetHumanoidBodyPartActive(currentBodyPart))
+                            {
+                                maskToMergeTo.SetHumanoidBodyPartActive(currentBodyPart, newBodyPartActive);
+                            }
+                            break;
+                    }
+                }
             }
         }
 
@@ -260,15 +356,19 @@ namespace VRLabs.Marker {
             AnimatorControllerLayer[] layers = controller.layers;
             List<AvatarMask> existingMasks = new List<AvatarMask>() { };
 
-            for (int i = 0; i < layers.Length; i++) {
+            for (int i = 0; i < layers.Length; i++)
+            {
                 if (layers[i].avatarMask != null)
                     continue;
 
                 AvatarMask newMask = GenerateMaskFromLayer(controller, i, maskTransformsOnly);
                 AvatarMask existingMask = GetExistingMaskIfExists(newMask, existingMasks);
-                if (existingMask != null) {
+                if (existingMask != null)
+                {
                     layers[i].avatarMask = existingMask;
-                } else {
+                }
+                else
+                {
                     string layerName = IsEmptyMask(newMask)
                         ? "Empty Mask"
                         : layers[i].name.Replace("/", "_").Trim();
@@ -286,11 +386,16 @@ namespace VRLabs.Marker {
             controller.layers = layers;
         }
 
-        public static AvatarMask GenerateMaskFromLayer(AnimatorController controller, int index, bool maskTransformsOnly) {
+        public static AvatarMask GenerateMaskFromLayer(AnimatorController controller, int index, bool maskTransformsOnly)
+        {
             AnimatorControllerLayer layer = controller.layers[index];
             List<AnimationClip> layerClips = GetAnimationsInMachine(layer.stateMachine);
 
             AvatarMask newMask = new AvatarMask();// GenerateEmptyMask(false);
+
+            // disable all bones by default
+            for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
+                newMask.SetHumanoidBodyPartActive((AvatarMaskBodyPart)i, false);
 
             bool addedBones = false;
             List<string> addedPaths = new List<string>();
@@ -299,11 +404,14 @@ namespace VRLabs.Marker {
                 if (clip == null)
                     continue;
 
+                Debug.Log($"Clip Name: {clip.name}");
+
                 List<string> allPaths = GetPathsInAnimation(clip, maskTransformsOnly);
                 foreach (string path in allPaths)
                 {
                     if (path.Length < 1 || addedPaths.Contains(path))
                         continue;
+
                     addedPaths.Add(path);
                 }
 
@@ -322,6 +430,7 @@ namespace VRLabs.Marker {
                 // add transforms
                 for (int i = 0; i < addedPaths.Count; i++)
                 {
+                    Debug.Log($"\tAdding Path: {addedPaths[i]}");
                     newMask.AddTransformPath(placeholder.transform);
                     newMask.SetTransformPath(i, addedPaths[i]);
                 }
@@ -331,7 +440,8 @@ namespace VRLabs.Marker {
             return newMask;
         }
 
-        static bool IsEmptyMask(AvatarMask mask) {
+        static bool IsEmptyMask(AvatarMask mask)
+        {
             if (mask == null || mask.transformCount > 1)
                 return false;
 
@@ -348,7 +458,8 @@ namespace VRLabs.Marker {
         public static void MaskNonMasked(AnimatorController controller, AvatarMask customMask)
         {
             AnimatorControllerLayer[] layers = controller.layers;
-            for (int i = 0; i < controller.layers.Length; i++) {
+            for (int i = 0; i < controller.layers.Length; i++)
+            {
                 if (layers[i].avatarMask == null)
                     layers[i].avatarMask = customMask;
             }
@@ -360,36 +471,53 @@ namespace VRLabs.Marker {
         static List<AvatarMaskBodyPart> PropertyNameToAvatarMaskBodyPart(string propertyName)
         {
             List<AvatarMaskBodyPart> bodyParts = new List<AvatarMaskBodyPart>();
-            if (propertyName.Contains("Chest") || propertyName.Contains("Spine")) {
+            if (propertyName.Contains("Chest") || propertyName.Contains("Spine"))
+            {
                 bodyParts.Add(AvatarMaskBodyPart.Body);
-            } else if (propertyName.Contains("Hips") || propertyName.Contains("Root")) {
+            }
+            else if (propertyName.Contains("Hips") || propertyName.Contains("Root"))
+            {
                 bodyParts.Add(AvatarMaskBodyPart.Root);
-            } else if (propertyName.Contains("Hand")) {
-                if (propertyName.Contains("Index") || propertyName.Contains("Middle") || propertyName.Contains("Little") || propertyName.Contains("Thumb") || propertyName.Contains("Ring")) {
+            }
+            else if (propertyName.Contains("Hand"))
+            {
+                if (propertyName.Contains("Index") || propertyName.Contains("Middle") || propertyName.Contains("Little") || propertyName.Contains("Thumb") || propertyName.Contains("Ring"))
+                {
                     bodyParts.Add(propertyName.Contains("Right") ? AvatarMaskBodyPart.RightFingers : AvatarMaskBodyPart.LeftFingers);
-                } else {
+                }
+                else
+                {
                     bodyParts.Add(propertyName.Contains("Right") ? AvatarMaskBodyPart.RightHandIK : AvatarMaskBodyPart.LeftHandIK);
                 }
-            } else if (propertyName.Contains("Arm") || propertyName.Contains("Shoulder")) {
+            }
+            else if (propertyName.Contains("Arm") || propertyName.Contains("Shoulder"))
+            {
                 bodyParts.Add(
                     propertyName.Contains("Right") ? AvatarMaskBodyPart.RightArm : AvatarMaskBodyPart.LeftArm
                 );
-            } else if (propertyName.Contains("Leg")) {
+            }
+            else if (propertyName.Contains("Leg"))
+            {
                 bodyParts.Add(
                     propertyName.Contains("Right") ? AvatarMaskBodyPart.RightLeg : AvatarMaskBodyPart.LeftLeg
                 );
-            } else if (propertyName.Contains("Foot")) {
+            }
+            else if (propertyName.Contains("Foot"))
+            {
                 bodyParts.Add(
                     propertyName.Contains("Right") ? AvatarMaskBodyPart.RightFootIK : AvatarMaskBodyPart.LeftFootIK
                 );
-            } else if (propertyName.Contains("Head") || propertyName.Contains("Neck") || propertyName.Contains("Eye") || propertyName.Contains("Jaw")) {
+            }
+            else if (propertyName.Contains("Head") || propertyName.Contains("Neck") || propertyName.Contains("Eye") || propertyName.Contains("Jaw"))
+            {
                 bodyParts.Add(AvatarMaskBodyPart.Head);
             }
 
             return bodyParts;
         }
 
-        public static void RemoveMaskAtIndex(AnimatorController controller, int index) {
+        public static void RemoveMaskAtIndex(AnimatorController controller, int index)
+        {
             if (controller == null)
                 return;
 
@@ -402,7 +530,8 @@ namespace VRLabs.Marker {
             controller.layers = layers;
         }
 
-        public static void SetMaskAtIndex(AnimatorController controller, int index, AvatarMask mask) {
+        public static void SetMaskAtIndex(AnimatorController controller, int index, AvatarMask mask)
+        {
             if (controller == null)
                 return;
 
@@ -415,5 +544,6 @@ namespace VRLabs.Marker {
             controller.layers = layers;
         }
     }
+
 }
 #endif
