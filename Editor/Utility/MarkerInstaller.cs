@@ -510,27 +510,43 @@ namespace VRLabs.Marker
                 }
             }
         }
-
         #endregion
 
         #region Quest
         public static AnimatorController GenerateQuest(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
         {
-            // physical setup
-            Animator avatar = descriptor.gameObject.GetComponent<Animator>();
-            Transform markerTarget = avatar.GetBoneTransform(
-                marker.leftHanded ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand
-            );
-
+            // instantiate marker prefab
             GameObject markerPrefab = Resources.Load(R_QUEST_MARKER_PATH) as GameObject;
             if(markerPrefab == null) {
                 throw new NullReferenceException("Quest Marker Prefab not found");
             }
-            markerPrefab = PrefabUtility.InstantiatePrefab(markerPrefab, markerTarget) as GameObject;
+            markerPrefab = PrefabUtility.InstantiatePrefab(markerPrefab) as GameObject;
             PrefabUtility.UnpackPrefabInstance(markerPrefab, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
             markerPrefab.name = "Marker";
-            markerPrefab.transform.localRotation = Quaternion.Euler(180, 0, 0);
-            markerPrefab.transform.localPosition = new Vector3(0.3f, 0, 0);
+
+
+            // check for index finger usage and set the target in accordance
+            Animator avatar = descriptor.gameObject.GetComponent<Animator>();
+            if (marker.useIndexFinger) {
+                Transform markerTarget = avatar.GetBoneTransform(
+                    marker.leftHanded ? HumanBodyBones.LeftIndexDistal : HumanBodyBones.RightIndexDistal
+                );
+
+                markerPrefab.transform.SetParent(markerTarget);
+                markerPrefab.transform.localPosition = Vector3.zero;
+                markerPrefab.transform.localRotation = Quaternion.identity;
+
+                // remove useless stuff 
+                GameObject.DestroyImmediate(markerPrefab.transform.Find("Marker").gameObject);
+            } else {
+                Transform markerTarget = avatar.GetBoneTransform(
+                    marker.leftHanded ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand
+                );
+                markerPrefab.transform.SetParent(markerTarget);
+                markerPrefab.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                markerPrefab.transform.localPosition = new Vector3(0.05f, 0.1f, 0);
+            }
+
 
             // create new pen animator
             AnimatorController penController = GenerateQuestPenAnimator(
@@ -539,13 +555,17 @@ namespace VRLabs.Marker
                 directory
             );
 
+
             // parameters
             VRCExpressionParameters.Parameter
             p_marker = new VRCExpressionParameters.Parameter
-            { name = "M_Marker", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
+            { name = M_MARKER_PARAM, valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
+            p_clear = new VRCExpressionParameters.Parameter
+            { name = M_MARKER_CLEAR_PARAM, valueType = VRCExpressionParameters.ValueType.Float, saved = true },
             p_color = new VRCExpressionParameters.Parameter
-            { name = "M_Color", valueType = VRCExpressionParameters.ValueType.Float, saved = true };
+            { name = M_COLOR_PARAM, valueType = VRCExpressionParameters.ValueType.Float, saved = true };
             ScriptFunctions.AddParameter(descriptor, p_marker, directory);
+            ScriptFunctions.AddParameter(descriptor, p_clear, directory);
             ScriptFunctions.AddParameter(descriptor, p_color, directory);
 
             return penController;
