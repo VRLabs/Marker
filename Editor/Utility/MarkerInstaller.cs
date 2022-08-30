@@ -716,7 +716,8 @@ namespace VRLabs.Marker
             return controller;
         }
 
-        static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, float lifetime, bool markerEnabled)
+        static AnimationClip GenerateQuestMarkerClip(string transformPath, bool emitting, 
+            float lifetime, bool markerEnabled)
         {
             string DRAW_PATH = $"{transformPath}/Draw";
             string MARKER_PATH = $"{transformPath}/Marker";
