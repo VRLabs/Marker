@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.IO;
 using System;
+using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Animations;
@@ -24,6 +25,7 @@ namespace VRLabs.Marker
         const string M_COLOR_PARAM = "VRLabs/Marker/Color";
         const string M_MARKER_PARAM = "VRLabs/Marker/Enable";
         const string M_MARKER_CLEAR_PARAM = "VRLabs/Marker/Clear";
+        const string M_NORMALIZED_PARAM_NAME = "VRLabs/Marker/_Normalize";
 
         public static void Generate(VRCAvatarDescriptor descriptor, ref Marker marker, bool installQuest)
         {
@@ -40,28 +42,54 @@ namespace VRLabs.Marker
             string directory = AssetDatabase.GUIDToAssetPath(guid);
 
             // Setup marker and return generated controller
-            AnimatorController generatedController = installQuest
+            Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> generatedControllers = installQuest
                 ? GenerateQuest(descriptor, ref marker, directory)
                 : GeneratePC(descriptor, ref marker, directory);
 
-            if(generatedController == null)
-                throw new NullReferenceException("Failed to generate marker controller");
+            if(generatedControllers == null)
+                throw new NullReferenceException("Failed to generate marker controller(s)");
+
+            // Merge Controllers
+            foreach (KeyValuePair<ScriptFunctions.PlayableLayer, AnimatorController> kvp in generatedControllers) {
+                ScriptFunctions.MergeController(descriptor, kvp.Value, kvp.Key, $"{directory}/");
+                AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(kvp.Value));
+            }
+
+            // For Gesture Layer
+            // this is super hardcoded danger in future
+            AnimatorController avatarGesture = descriptor.baseAnimationLayers[2].animatorController as AnimatorController;
+            if (avatarGesture != null)
+            {
+                for (int i = 0; i < avatarGesture.layers.Length; i++)
+                {   // the controls' layer is normally 3 (AllParts, LeftHand, RightHand, >>>M_Gesture<<<)
+                    if (avatarGesture.layers[i].name.Contains("VRLabs/Marker/Gesture") && (i != 3))
+                    {
+                        for (int j = 0; j < 3; j++)
+                        {
+                            if (avatarGesture.layers[i].stateMachine.states[j].state.behaviours.Length != 0)
+                            {
+                                VRCAnimatorLayerControl ctrl = (VRCAnimatorLayerControl)avatarGesture.layers[i]
+                                    .stateMachine.states[j].state.behaviours[0];
+                                ctrl.layer = i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            EditorUtility.SetDirty(avatarGesture);
 
             // Generate and apply master Avatar Mask
             if (marker.generateMasterMask)
             {
-                AnimatorControllerLayer[] layers = generatedController.layers;
-                layers[0].avatarMask = AvatarMaskFunctions.GenerateFXMasterMask(descriptor, directory);
-                generatedController.layers = layers;
-            }
+                AnimatorController fxController = descriptor.baseAnimationLayers[4].animatorController as AnimatorController;
+                EditorUtility.SetDirty(fxController);
 
-            // merge
-            ScriptFunctions.MergeController(
-                descriptor,
-                generatedController,
-                ScriptFunctions.PlayableLayer.FX,
-                directory
-            );
+                AnimatorControllerLayer[] layers = fxController.layers;
+                layers[0].avatarMask = AvatarMaskFunctions.GenerateFXMasterMask(descriptor, directory);
+                fxController.layers = layers;
+                descriptor.baseAnimationLayers[4].animatorController = fxController;
+            }
 
             // finishing touches
             AssetDatabase.SaveAssets();
@@ -75,24 +103,34 @@ namespace VRLabs.Marker
         {
             Animator avatar = descriptor.GetComponent<Animator>();
 
-            ScriptFunctions.UninstallControllerByPrefix(descriptor, "M_", ScriptFunctions.PlayableLayer.FX);
-            ScriptFunctions.UninstallControllerByPrefix(descriptor, "M_", ScriptFunctions.PlayableLayer.Gesture);
-            ScriptFunctions.UninstallParametersByPrefix(descriptor, "M_");
+            ScriptFunctions.UninstallControllerByPrefix(descriptor, "VRLabs/Marker", ScriptFunctions.PlayableLayer.FX);
+            ScriptFunctions.UninstallControllerByPrefix(descriptor, "VRLabs/Marker", ScriptFunctions.PlayableLayer.Gesture);
+            ScriptFunctions.UninstallParametersByPrefix(descriptor, "VRLabs/Marker");
             ScriptFunctions.UninstallMenu(descriptor, "Marker");
             if (descriptor != null)
             {
                 Transform foundMarker = descriptor.transform.Find("Marker");
                 if (foundMarker != null)
                     GameObject.DestroyImmediate(foundMarker.gameObject);
+
                 if (avatar.isHuman)
                 {
-                    HumanBodyBones[] bonesToSearch = { HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
-                        HumanBodyBones.LeftIndexDistal, HumanBodyBones.RightIndexDistal };
+                    HumanBodyBones[] bonesToSearch = { 
+                        HumanBodyBones.LeftHand, 
+                        HumanBodyBones.RightHand,
+                        HumanBodyBones.LeftIndexDistal, 
+                        HumanBodyBones.RightIndexDistal 
+                    };
+
                     for (int i = 0; i < bonesToSearch.Length; i++)
                     {
-                        GameObject foundTargetPC = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget", true);
-                        if (foundTargetPC != null)
-                            GameObject.DestroyImmediate(foundTargetPC);
+                        GameObject foundTargetPCLeft = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget Left", true);
+                        if (foundTargetPCLeft != null)
+                            GameObject.DestroyImmediate(foundTargetPCLeft);
+
+                        GameObject foundTargetPCRight = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget Right", true);
+                        if (foundTargetPCRight != null)
+                            GameObject.DestroyImmediate(foundTargetPCRight);
 
                         GameObject foundTargetQuest = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "Marker", true);
                         if (foundTargetQuest != null)
@@ -103,66 +141,32 @@ namespace VRLabs.Marker
         }
 
         #region PC
-        public static AnimatorController GeneratePC(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
-        {
-            return null;
-            Animator avatar = descriptor.GetComponent<Animator>();
 
+        static AnimatorController GeneratePCAnimatorFX(VRCAvatarDescriptor descriptor, Marker marker, string directory)
+        {
             // Install layers, parameters, and menu before prefab setup
-            // FX layer
-            if (marker.useIndexFinger)
-            {
-                AssetDatabase.CopyAsset(
-                    $"{A_PC_MARKER_DIR}/M_FX (Finger).controller",
-                    directory + "FXtemp.controller");
-            }
-            else
-            {
-                AssetDatabase.CopyAsset(
-                    $"{A_PC_MARKER_DIR}/M_FX.controller",
-                    directory + "FXtemp.controller");
-            }
+            string controllerName = marker.useIndexFinger ? "M_FX (Finger).controller" : "M_FX.controller";
+            string tempFXPath = $"{directory}/FXTemp.controller";
+            AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/{controllerName}", tempFXPath);
 
             AnimatorController FX = AssetDatabase.LoadAssetAtPath(
-                directory + "FXtemp.controller",
-                typeof(AnimatorController)
+                tempFXPath, typeof(AnimatorController)
             ) as AnimatorController;
 
-            // remove controller layers before merging to avatar, corresponding to setup
-            /*
-            if (leftHanded)
-                ScriptFunctions.RemoveLayer(FX, "M_Marker R");
-            else
-                ScriptFunctions.RemoveLayer(FX, "M_Marker L");
-
-            if (!brushSize)
-            {
-                ScriptFunctions.RemoveLayer(FX, "M_Size");
-                ScriptFunctions.RemoveParameter(FX, "M_Size");
-            }
-
-            if (!eraserSize)
-            {
-                ScriptFunctions.RemoveLayer(FX, "M_EraserSize");
-                ScriptFunctions.RemoveParameter(FX, "M_EraserSize");
-            }*/
-
-            if (!marker.localSpace)
-            {
-                ScriptFunctions.RemoveLayer(FX, "M_Space");
-                ScriptFunctions.RemoveParameter(FX, "M_Space");
-                ScriptFunctions.RemoveLayer(FX, "M_Cull");
-            }
-            else
-            {
-                ScriptFunctions.RemoveLayer(FX, "M_SpaceSimple");
-                ScriptFunctions.RemoveParameter(FX, "M_SpaceSimple");
-                ScriptFunctions.RemoveLayer(FX, "M_CullSimple");
-            }
-
+            // determine local space layers
+            // set WD
             if (marker.wdSetting)
             {
                 ScriptFunctions.SetWriteDefaults(FX);
+
+                // if we are using WD, we want to set the blendtree's normalize parameter to 1
+                AnimatorControllerParameter[] parameters = FX.parameters;
+                for(int i = 0; i < parameters.Length; i++) {
+                    if (parameters[i].name.Equals(M_NORMALIZED_PARAM_NAME)) {
+                        parameters[i].defaultFloat = 1;
+                    }
+                }
+                FX.parameters = parameters;
             }
             if (marker.gestureToDraw != 3) // uses fingerpoint by default
             {
@@ -182,15 +186,17 @@ namespace VRLabs.Marker
             driver.parameters.Add(param);
 
             EditorUtility.SetDirty(FX);
-            ScriptFunctions.MergeController(descriptor, FX, ScriptFunctions.PlayableLayer.FX, directory);
-            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(FX)); // delete temporary FX layer
+            return FX;
+        }
 
+        static AnimatorController GeneratePCAnimatorGesture(VRCAvatarDescriptor descriptor, Marker marker, string directory)
+        {
             // Gesture layer
             AssetDatabase.CopyAsset(
                 $"{A_PC_MARKER_DIR}/M_Gesture.controller",
-                directory + "gestureTemp.controller"); // to modify
+                $"{directory}/gestureTemp.controller");
             AnimatorController gesture = AssetDatabase.LoadAssetAtPath(
-                directory + "gestureTemp.controller",
+                $"{directory}/gestureTemp.controller",
                 typeof(AnimatorController)
             ) as AnimatorController;
 
@@ -199,9 +205,9 @@ namespace VRLabs.Marker
             {
                 AssetDatabase.CopyAsset(
                     $"{A_SHARED_RESOURCES_DIR}/Default/M_DefaultGesture.controller",
-                    directory + "Gesture.controller");
+                    $"{directory}/Gesture.controller");
                 AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(
-                    directory + "Gesture.controller", typeof(AnimatorController)
+                    $"{directory}/Gesture.controller", typeof(AnimatorController)
                 ) as AnimatorController;
 
                 descriptor.customExpressions = true;
@@ -246,135 +252,29 @@ namespace VRLabs.Marker
             }
 
             EditorUtility.SetDirty(gesture);
-            ScriptFunctions.MergeController(descriptor, gesture, ScriptFunctions.PlayableLayer.Gesture, directory);
-            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(gesture)); // delete temporary gesture layer
+            //ScriptFunctions.MergeController(descriptor, gesture, ScriptFunctions.PlayableLayer.Gesture, directory);
+            //AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(gesture)); // delete temporary gesture layer
 
-            // layer weight control from merged layer may need index set correctly
-            AnimatorController avatarGesture = (AnimatorController)descriptor.baseAnimationLayers[2].animatorController;
-            for (int i = 0; i < avatarGesture.layers.Length; i++)
-            {   // the controls' layer is normally 3 (AllParts, LeftHand, RightHand, >>>M_Gesture<<<)
-                if (avatarGesture.layers[i].name.Contains("M_Gesture") && (i != 3))
-                {
-                    for (int j = 0; j < 3; j++)
-                    {
-                        if (avatarGesture.layers[i].stateMachine.states[j].state.behaviours.Length != 0)
-                        {
-                            VRCAnimatorLayerControl ctrl = (VRCAnimatorLayerControl)avatarGesture.layers[i]
-                                .stateMachine.states[j].state.behaviours[0];
-                            ctrl.layer = i;
-                        }
-                    }
-                }
-            }
+            return gesture;
+        }
 
-            EditorUtility.SetDirty(avatarGesture);
+        static void GeneratePCPrefab(VRCAvatarDescriptor descriptor, Marker marker)
+        {
+            Animator avatar = descriptor.GetComponent<Animator>();
 
-            // Parameters
-            VRCExpressionParameters.Parameter
-            p_marker = new VRCExpressionParameters.Parameter
-            { name = "M_Marker", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
-            p_eraser = new VRCExpressionParameters.Parameter
-            { name = "M_Eraser", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
-            p_clear = new VRCExpressionParameters.Parameter
-            { name = "M_Clear", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
-            p_color = new VRCExpressionParameters.Parameter
-            { name = "M_Color", valueType = VRCExpressionParameters.ValueType.Float, saved = true };
-            ScriptFunctions.AddParameter(descriptor, p_marker, directory);
-            ScriptFunctions.AddParameter(descriptor, p_eraser, directory);
-            ScriptFunctions.AddParameter(descriptor, p_clear, directory);
-            ScriptFunctions.AddParameter(descriptor, p_color, directory);
-
-            if (marker.localSpace)
-            {
-                VRCExpressionParameters.Parameter p_space = new VRCExpressionParameters.Parameter
-                { name = "M_Space", valueType = VRCExpressionParameters.ValueType.Int, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_space, directory);
-            }
-            else
-            {
-                VRCExpressionParameters.Parameter p_spaceSimple = new VRCExpressionParameters.Parameter
-                { name = "M_SpaceSimple", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_spaceSimple, directory);
-            }
-
-            if (marker.brushSize)
-            {
-                VRCExpressionParameters.Parameter p_size = new VRCExpressionParameters.Parameter
-                { name = "M_Size", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_size, directory);
-            }
-            if (marker.eraserSize)
-            {
-                VRCExpressionParameters.Parameter p_eraserSize = new VRCExpressionParameters.Parameter
-                { name = "M_EraserSize", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_eraserSize, directory);
-            }
-
-            VRCExpressionParameters.Parameter p_menu = new VRCExpressionParameters.Parameter
-            { name = "M_Menu", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
-            ScriptFunctions.AddParameter(descriptor, p_menu, directory);
-
-            // handle menu instancing
-            AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu.asset", directory + "Marker Menu.asset");
-            VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(
-                directory + "Marker Menu.asset", typeof(VRCExpressionsMenu)
-            ) as VRCExpressionsMenu;
-
-            if (!marker.localSpace) // change from submenu to 1 toggle
-            {
-                VRCExpressionsMenu.Control.Parameter pm_spaceSimple = new VRCExpressionsMenu.Control.Parameter
-                { name = "M_SpaceSimple" };
-                markerMenu.controls[6].type = VRCExpressionsMenu.Control.ControlType.Toggle;
-                markerMenu.controls[6].parameter = pm_spaceSimple;
-                markerMenu.controls[6].subMenu = null; // or else the submenu is still there internally, SDK complains
-            }
-            else
-            {
-                AssetDatabase.CopyAsset(
-                    $"{A_PC_MARKER_DIR}/M_Menu Space.asset",
-                    directory + "Marker Space Submenu.asset");
-                VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(
-                    directory + "Marker Space Submenu.asset", typeof(VRCExpressionsMenu)
-                ) as VRCExpressionsMenu;
-
-                if (marker.localSpaceFullBody == 0) // remove left and right foot controls
-                {
-                    subMenu.controls.RemoveAt(7);
-                    subMenu.controls.RemoveAt(6);
-                }
-                markerMenu.controls[6].subMenu = subMenu;
-                EditorUtility.SetDirty(subMenu);
-            }
-
-            if (!marker.brushSize)
-                ScriptFunctions.RemoveMenuControl(markerMenu, "Brush Size");
-
-            if (!marker.eraserSize)
-                ScriptFunctions.RemoveMenuControl(markerMenu, "Eraser Size");
-
-            EditorUtility.SetDirty(markerMenu);
-
-            VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter
-            { name = "M_Menu" };
-            Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(
-                $"{A_SHARED_RESOURCES_DIR}/Icons/M_Icon_Menu.png",
-                typeof(Texture2D)
-            ) as Texture2D;
-            ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
-
-            // setup in scene
-            GameObject markerPrefab = PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath(
-                "Assets/VRLabs/Marker/Resources/Marker.prefab",
-                typeof(GameObject))
+            // Physical Setup
+            GameObject markerPrefab = PrefabUtility.InstantiatePrefab(
+                AssetDatabase.LoadAssetAtPath($"{A_PC_MARKER_DIR}/Marker.prefab", typeof(GameObject))
             ) as GameObject;
 
             if (PrefabUtility.IsPartOfPrefabInstance(markerPrefab))
                 PrefabUtility.UnpackPrefabInstance(markerPrefab, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            markerPrefab.transform.SetParent(avatar.transform, false);
 
+            markerPrefab.transform.SetParent(avatar.transform, false);
             Transform system = markerPrefab.transform.Find("System");
             Transform targets = markerPrefab.transform.Find("Targets");
-            Transform markerTarget = targets.Find("MarkerTarget");
+            Transform markerTargetLeft = targets.Find("MarkerTargetLeft");
+            Transform markerTargetRight = targets.Find("MarkerTargetRight");
             Transform markerModel = targets.Find("Model");
             Transform eraser = system.Find("Eraser");
             Transform local = markerPrefab.transform.Find("World").Find("Local");
@@ -389,39 +289,54 @@ namespace VRLabs.Marker
 
             if (marker.useIndexFinger)
             {
-                GameObject.DestroyImmediate(markerTarget.GetChild(0).gameObject); // destroy Flip
-                Transform indexDistal = marker.leftHanded
-                    ? avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal)
-                    : avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal);
+                GameObject.DestroyImmediate(markerTargetLeft.GetChild(0).gameObject); // destroy Flip
+                Transform indexDistalLeft = avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal);
+                Transform indexDistalRight = avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal);
 
                 // prefer the end bone of the index finger if it exists
-                if (indexDistal.Find(indexDistal.gameObject.name + "_end") != null)
-                    markerTarget.SetParent(indexDistal.Find(indexDistal.gameObject.name + "_end"), true);
+                if (indexDistalLeft.Find(indexDistalLeft.gameObject.name + "_end") != null)
+                    markerTargetLeft.SetParent(indexDistalLeft.Find(indexDistalLeft.gameObject.name + "_end"), true);
                 else
-                    markerTarget.SetParent(indexDistal, true);
-                markerTarget.localPosition = Vector3.zero;
-                markerTarget.localRotation = Quaternion.Euler(0f, 0f, 0f);
+                    markerTargetLeft.SetParent(indexDistalLeft, true);
+                markerTargetLeft.localPosition = Vector3.zero;
+                markerTargetLeft.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+                if (indexDistalRight.Find(indexDistalRight.gameObject.name + "_end") != null)
+                    markerTargetRight.SetParent(indexDistalRight.Find(indexDistalRight.gameObject.name + "_end"), true);
+                else
+                    markerTargetRight.SetParent(indexDistalRight, true);
+                markerTargetRight.localPosition = Vector3.zero;
+                markerTargetRight.localRotation = Quaternion.Euler(0f, 0f, 0f);
             }
             else // using model: scale Model to target freely, and until script is destroyed, scale System to target uniformly with X-axis 
             {
                 markerModel.SetParent(markerPrefab.transform); // move it out of Targets hierarchy
 
-                Transform hand = marker.leftHanded
-                    ? avatar.GetBoneTransform(HumanBodyBones.LeftHand)
-                    : avatar.GetBoneTransform(HumanBodyBones.RightHand);
+                Transform handLeft = avatar.GetBoneTransform(HumanBodyBones.LeftHand);
+                Transform handRight = avatar.GetBoneTransform(HumanBodyBones.RightHand);
 
-                Transform elbow = marker.leftHanded
-                    ? avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm)
-                    : avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
+                Transform elbowLeft = avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm);
+                Transform elbowRight = avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
 
                 // need to flip the target(model). we can use the Flip object by resetting markertarget transform,
                 // getting Flip's position, then rotating markertarget
-                markerTarget.SetParent(hand, true);
-                markerTarget.localPosition = Vector3.zero;
-                markerTarget.localRotation = Quaternion.Euler(0f, 0f, 0f);
-                markerTarget.position = markerTarget.GetChild(0).transform.position;
-                markerTarget.localPosition = new Vector3(0f, markerTarget.localPosition.y, 0f); // ignore offset on x and z
-                markerTarget.localRotation = Quaternion.Euler(0f, 0f, 180f); // and flip the rotation
+                {
+                    markerTargetLeft.SetParent(handLeft, true);
+                    markerTargetLeft.localPosition = Vector3.zero;
+                    markerTargetLeft.localRotation = Quaternion.Euler(0f, 0f, 0f);
+                    //markerTargetLeft.position = markerTargetLeft.GetChild(0).transform.position;
+                    markerTargetLeft.localPosition = new Vector3(0f, markerTargetLeft.localPosition.y, 0f); // ignore offset on x and z
+                    markerTargetLeft.localRotation = Quaternion.Euler(0f, 0f, 180f); // and flip the rotation
+                }
+
+                {
+                    markerTargetRight.SetParent(handRight, true);
+                    markerTargetRight.localPosition = Vector3.zero;
+                    markerTargetRight.localRotation = Quaternion.Euler(0f, 0f, 0f);
+                    //markerTargetRight.position = markerTargetRight.GetChild(0).transform.position;
+                    markerTargetRight.localPosition = new Vector3(0f, markerTargetRight.localPosition.y, 0f); // ignore offset on x and z
+                    markerTargetRight.localRotation = Quaternion.Euler(0f, 0f, 180f); // and flip the rotation
+                }
 
                 marker.markerModel = markerModel; // to turn its mesh renderer off when script is finished
             }
@@ -457,21 +372,21 @@ namespace VRLabs.Marker
                 }
             }
 
-            GameObject.DestroyImmediate(targets.gameObject); // remove the "Targets" container object when finished
+            //GameObject.DestroyImmediate(targets.gameObject); // remove the "Targets" container object when finished
 
             // set anything not adjustable to a medium-ish amount
             if (!marker.eraserSize)
             {
-                eraser.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+                //eraser.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
             }
             if (!marker.brushSize)
             {
                 ParticleSystem.MinMaxCurve size = new ParticleSystem.MinMaxCurve(0.024f);
                 Transform draw = system.transform.Find("Draw");
-                Transform preview = draw.GetChild(0);
+                //Transform preview = draw.GetChild(0);
                 ParticleSystem.MainModule main = draw.GetComponent<ParticleSystem>().main;
                 main.startSize = size;
-                main = preview.GetComponent<ParticleSystem>().main;
+                //main = preview.GetComponent<ParticleSystem>().main;
                 main.startSize = size;
             }
 
@@ -482,11 +397,124 @@ namespace VRLabs.Marker
             Vector3 dist = (head.position - hips.position);
 
             float normalizedDist = (Math.Max(Math.Max(dist.x, dist.y), dist.z) / KSIVL_UNIT);
-            float newScale = markerTarget.localScale.x * normalizedDist;
-            markerTarget.localScale = new Vector3(newScale, newScale, newScale);
+            float newScale = markerTargetLeft.localScale.x * normalizedDist;
+            markerTargetLeft.localScale = new Vector3(newScale, newScale, newScale);
 
             marker.system = system;
-            marker.markerTarget = markerTarget;
+            marker.markerTargetRight = markerTargetRight;
+        }
+
+        public static Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> GeneratePC(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
+        {
+            // Physical Install
+            GeneratePCPrefab(descriptor, marker);
+
+            // Animators
+            Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> controllers = new Dictionary<ScriptFunctions.PlayableLayer, AnimatorController>() {
+                { ScriptFunctions.PlayableLayer.FX, GeneratePCAnimatorFX(descriptor, marker, directory) }
+            };
+
+            if (!marker.useIndexFinger) {
+                controllers.Add(
+                    ScriptFunctions.PlayableLayer.Gesture, 
+                    GeneratePCAnimatorGesture(descriptor, marker, directory)
+                );
+            }
+
+            // Parameters
+            VRCExpressionParameters.Parameter
+            p_marker = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/Enable", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
+            p_eraser = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/Eraser", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
+            p_clear = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/Clear", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
+            p_color = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/Color", valueType = VRCExpressionParameters.ValueType.Float, saved = true };
+            ScriptFunctions.AddParameter(descriptor, p_marker, directory);
+            ScriptFunctions.AddParameter(descriptor, p_eraser, directory);
+            ScriptFunctions.AddParameter(descriptor, p_clear, directory);
+            ScriptFunctions.AddParameter(descriptor, p_color, directory);
+
+            // Menus
+            if (marker.localSpace)
+            {
+                VRCExpressionParameters.Parameter p_space = new VRCExpressionParameters.Parameter
+                { name = "VRLabs/Marker/Space", valueType = VRCExpressionParameters.ValueType.Int, saved = false };
+                ScriptFunctions.AddParameter(descriptor, p_space, directory);
+            }
+            else
+            {
+                VRCExpressionParameters.Parameter p_spaceSimple = new VRCExpressionParameters.Parameter
+                { name = "VRLabs/Marker/SpaceSimple", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
+                ScriptFunctions.AddParameter(descriptor, p_spaceSimple, directory);
+            }
+
+            if (marker.brushSize)
+            {
+                VRCExpressionParameters.Parameter p_size = new VRCExpressionParameters.Parameter
+                { name = "VRLabs/Marker/Size", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
+                ScriptFunctions.AddParameter(descriptor, p_size, directory);
+            }
+            if (marker.eraserSize)
+            {
+                VRCExpressionParameters.Parameter p_eraserSize = new VRCExpressionParameters.Parameter
+                { name = "VRLabs/Marker/EraserSize", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
+                ScriptFunctions.AddParameter(descriptor, p_eraserSize, directory);
+            }
+
+            VRCExpressionParameters.Parameter p_menu = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/Menu", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
+            ScriptFunctions.AddParameter(descriptor, p_menu, directory);
+
+            // handle menu instancing
+            AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu.asset", $"{directory}/Marker Menu.asset");
+            VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(
+                $"{directory}/Marker Menu.asset", typeof(VRCExpressionsMenu)
+            ) as VRCExpressionsMenu;
+
+            if (!marker.localSpace) // change from submenu to 1 toggle
+            {
+                VRCExpressionsMenu.Control.Parameter pm_spaceSimple = new VRCExpressionsMenu.Control.Parameter
+                { name = "VRLabs/Marker/SpaceSimple" };
+                markerMenu.controls[6].type = VRCExpressionsMenu.Control.ControlType.Toggle;
+                markerMenu.controls[6].parameter = pm_spaceSimple;
+                markerMenu.controls[6].subMenu = null; // or else the submenu is still there internally, SDK complains
+            }
+            else
+            {
+                string submenuPath = $"{directory}/Marker Space Submenu.asset";
+                AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu Space.asset", submenuPath);
+                VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(
+                    submenuPath, typeof(VRCExpressionsMenu)
+                ) as VRCExpressionsMenu;
+
+                if (marker.localSpaceFullBody == 0) // remove left and right foot controls
+                {
+                    subMenu.controls.RemoveAt(7);
+                    subMenu.controls.RemoveAt(6);
+                }
+                markerMenu.controls[6].subMenu = subMenu;
+                EditorUtility.SetDirty(subMenu);
+            }
+
+            if (!marker.brushSize)
+                ScriptFunctions.RemoveMenuControl(markerMenu, "Brush Size");
+
+            if (!marker.eraserSize)
+                ScriptFunctions.RemoveMenuControl(markerMenu, "Eraser Size");
+
+            EditorUtility.SetDirty(markerMenu);
+
+            VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter
+            { name = "VRLabs/Marker/Menu" };
+            Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(
+                $"{A_SHARED_RESOURCES_DIR}/Icons/M_Icon_Menu.png",
+                typeof(Texture2D)
+            ) as Texture2D;
+            ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
+
+            return controllers;
         }
 
         private static void ChangeGestureCondition(AnimatorController controller, int layerToModify, int newGesture)
@@ -513,7 +541,7 @@ namespace VRLabs.Marker
         #endregion
 
         #region Quest
-        public static AnimatorController GenerateQuest(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
+        public static Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> GenerateQuest(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
         {
             // instantiate marker prefab
             GameObject markerPrefab = Resources.Load(R_QUEST_MARKER_PATH) as GameObject;
@@ -568,7 +596,12 @@ namespace VRLabs.Marker
             ScriptFunctions.AddParameter(descriptor, p_clear, directory);
             ScriptFunctions.AddParameter(descriptor, p_color, directory);
 
-            return penController;
+            // menus
+
+
+            return new Dictionary<ScriptFunctions.PlayableLayer, AnimatorController>() {
+                { ScriptFunctions.PlayableLayer.FX, penController }
+            };
         }
 
         static AnimatorController GenerateQuestPenAnimator(string penPrefabPath, Marker marker, string directory)
@@ -710,7 +743,7 @@ namespace VRLabs.Marker
             AnimatorControllerLayer[] layers = controller.layers;
             layers[layerIdx] = markerLayer;
             layers[layerIdx].defaultWeight = 1;
-            layers[layerIdx].name = "M_Marker";
+            layers[layerIdx].name = "VRLabs/Marker";
             controller.layers = layers;
 
             return controller;
@@ -723,11 +756,10 @@ namespace VRLabs.Marker
             string MARKER_PATH = $"{transformPath}/Marker";
             string PREVIEW_PATH = $"{transformPath}/Marker/Preview";
 
-
             AnimationClip clip = new AnimationClip();
             EditorUtility.SetDirty(clip);
 
-            // trail renderer state
+            // trail renderer drawing
             clip.SetCurve(DRAW_PATH, typeof(TrailRenderer), "m_Emitting", new AnimationCurve()
             {
                 keys = new Keyframe[] {
@@ -822,7 +854,57 @@ namespace VRLabs.Marker
                 }
             });
 
-            // preview color
+            // marker object color
+            clip.SetCurve(MARKER_PATH, typeof(MeshRenderer), "material._EmissionColor.r", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+            clip.SetCurve(MARKER_PATH, typeof(MeshRenderer), "material._EmissionColor.g", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+            clip.SetCurve(MARKER_PATH, typeof(MeshRenderer), "material._EmissionColor.b", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 5/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 10/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 15/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 20/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 25/60f, value=1, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 30/60f, value=0, inTangent=0, outTangent=0 },
+                    new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
+                }
+            });
+
+            // marker object toggle
+            clip.SetCurve(MARKER_PATH, typeof(GameObject), "m_IsActive", new AnimationCurve()
+            {
+                keys = new Keyframe[] {
+                    new Keyframe() { time = 0, value=markerEnabled ? 1 : 0, inTangent=0, outTangent=0 }
+                }
+            });
+
+
+            /* preview color
             clip.SetCurve(PREVIEW_PATH, typeof(ParticleSystem), "InitialModule.startColor.maxColor.r", new AnimationCurve()
             {
                 keys = new Keyframe[] {
@@ -862,14 +944,7 @@ namespace VRLabs.Marker
                     new Keyframe() { time = 35/60f, value=1, inTangent=0, outTangent=0 },
                 }
             });
-
-            // marker enable
-            clip.SetCurve(MARKER_PATH, typeof(GameObject), "m_IsActive", new AnimationCurve() {
-                keys = new Keyframe[] {
-                    new Keyframe() { time = 0, value=markerEnabled ? 1 : 0, inTangent=0, outTangent=0 }
-                }
-            });
-
+            */
             return clip;
         }
         #endregion Quest

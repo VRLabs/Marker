@@ -30,7 +30,8 @@ namespace VRLabs.Marker
         public bool isQuest;
         public bool generateMasterMask;
 
-        private bool isWdAutoSet;
+        bool isWdAutoSet;
+        int memoryAvailable;
 
 
         // styles
@@ -53,25 +54,27 @@ namespace VRLabs.Marker
 
         private void OnEnable()
         {
-            isQuest = EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android;
+            isQuest = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
             platformIcon = Resources.Load<Texture2D>(isQuest ? $"{R_ICON_DIR}/Meta" : $"{R_ICON_DIR}/Windows");
-            marker = (Marker) target;
+            marker = target as Marker;
         }
 
         public void Reset()
         {
-            if (((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>() != null)
-                descriptor = ((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>();
+            if (marker == null)
+                return;
 
-            leftHanded = ((Marker)target).leftHanded;
-            wdSetting = ((Marker)target).wdSetting;
-            brushSize = ((Marker)target).brushSize;
-            eraserSize = ((Marker)target).eraserSize;
-            localSpace = ((Marker)target).localSpace;
-            localSpaceFullBody = ((Marker)target).localSpaceFullBody;
-            useIndexFinger = ((Marker)target).useIndexFinger;
-            gestureToDraw = ((Marker)target).gestureToDraw;
-            generateMasterMask = ((Marker)target).generateMasterMask;
+            descriptor = marker.gameObject.GetComponent<VRCAvatarDescriptor>();
+
+            wdSetting = marker.wdSetting;
+            brushSize = marker.brushSize;
+            leftHanded = marker.leftHanded;
+            eraserSize = marker.eraserSize;
+            localSpace = marker.localSpace;
+            gestureToDraw = marker.gestureToDraw;
+            useIndexFinger = marker.useIndexFinger;
+            localSpaceFullBody = marker.localSpaceFullBody;
+            generateMasterMask = marker.generateMasterMask;
 
             SetPreviousInstallSettings();
         }
@@ -139,16 +142,17 @@ namespace VRLabs.Marker
                     true
                 );
 
-                // only check WD and retrieve animator when the descriptor field has been modified
+                // only scan for avatar errors when the descriptor field has been modified
                 if (EditorGUI.EndChangeCheck() && descriptor != null) {
                     ScanAvatar();
+                    gestureToDraw = 3;
                 }
 
                 GUI.enabled = descriptor != null;
 
                 GUILayout.Space(8);
 
-                leftHanded = EditorGUILayout.ToggleLeft("Left-handed", leftHanded);
+                //leftHanded = EditorGUILayout.ToggleLeft("Left-handed", leftHanded);
                 using (new EditorGUI.DisabledGroupScope(isWdAutoSet))
                 {
                     string subtext = isWdAutoSet ? String.Empty : "Could not auto-detect.\n";
@@ -174,6 +178,7 @@ namespace VRLabs.Marker
 
                 GUILayout.Space(8);
 
+                EditorGUI.BeginChangeCheck();
                 useIndexFinger = EditorGUILayout.ToggleLeft(new GUIContent(
                     "Use index finger to draw", "By default, you draw " +
                     "with a shiny pen. Check this to draw with your index finger instead."
@@ -205,18 +210,26 @@ namespace VRLabs.Marker
                         GUILayout.EndVertical();
                     }
                 }
+                if (EditorGUI.EndChangeCheck())
+                    ScanAvatar();
 
                 GUILayout.Space(8);
 
-                EditorGUILayout.LabelField($"Parameter memory needed: {bitCount}");
 
-                // "Generate" button
-
+                // display parameter memory stuff
+                using (new EditorGUILayout.HorizontalScope(boxStyle))
+                {
+                    EditorGUILayout.LabelField($"Parameter Memory Used: {bitCount}", titleStyle);
+                    if (descriptor != null)
+                        EditorGUILayout.LabelField($"Parameter Memory Available: {memoryAvailable}", titleStyle);
+                }
+                
                 // display warnings
                 for (int i = 0; i < warnings.Count; i++) {
-                    GUILayout.Box(warnings[i], boxStyle);
+                    EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
                 }
 
+                // "Generate" button    
                 using (new EditorGUI.DisabledGroupScope(warnings.Count > 0))
                 {
                     if (GUILayout.Button("Generate Marker", buttonStyle)) {
@@ -246,13 +259,13 @@ namespace VRLabs.Marker
                 if (GUILayout.Button(new GUIContent("Adjust MarkerTarget transform", "If needed, move, rotate, or scale MarkerTarget " +
                     "so it's either in your hand (marker model) or at the tip of your index finger (no marker model).")))
                 {
-                    if (((Marker)target).markerTarget.gameObject == null)
+                    if (((Marker)target).markerTargetRight.gameObject == null)
                     {
                         Debug.LogError("Can't find MarkerTarget! It may have been moved or deleted.");
                     }
                     else
                     {
-                        Selection.activeGameObject = ((Marker)target).markerTarget.gameObject;
+                        Selection.activeGameObject = ((Marker)target).markerTargetRight.gameObject;
                     }
                 }
 
@@ -275,15 +288,15 @@ namespace VRLabs.Marker
                 }
             }
 
-            ((Marker)target).leftHanded = leftHanded;
-            ((Marker)target).wdSetting = wdSetting;
-            ((Marker)target).brushSize = brushSize;
-            ((Marker)target).eraserSize = eraserSize;
-            ((Marker)target).localSpace = localSpace;
-            ((Marker)target).localSpaceFullBody = localSpaceFullBody;
-            ((Marker)target).useIndexFinger = useIndexFinger;
-            ((Marker)target).gestureToDraw = gestureToDraw;
-            ((Marker)target).generateMasterMask = generateMasterMask;
+            marker.wdSetting = wdSetting;
+            marker.brushSize = brushSize;
+            marker.leftHanded = leftHanded;
+            marker.eraserSize = eraserSize;
+            marker.localSpace = localSpace;
+            marker.gestureToDraw = gestureToDraw;
+            marker.useIndexFinger = useIndexFinger;
+            marker.localSpaceFullBody = localSpaceFullBody;
+            marker.generateMasterMask = generateMasterMask;
 
             GUI.enabled = true;
         }
@@ -309,6 +322,10 @@ namespace VRLabs.Marker
         void ScanAvatar()
         {
             animator = descriptor.gameObject.GetComponent<Animator>();
+
+            memoryAvailable = 256;
+            if (descriptor.expressionParameters != null)
+                memoryAvailable -= descriptor.expressionParameters.CalcTotalCost();
 
             // Check WD
             var states = descriptor.AnalyzeWDState();
@@ -486,16 +503,22 @@ namespace VRLabs.Marker
             Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
             Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
 
-            if (useIndexFinger && leftIndex == null && rightIndex == null)
-                warnings.Add("Your avatar rig's left and/or right index finger's distal bone is unmapped!");
+            if (useIndexFinger)
+            {
+                if (leftIndex == null)
+                    warnings.Add("Your avatar rig's left index finger's last bone is unmapped!");
+                if (rightIndex == null)
+                    warnings.Add("Your avatar rig's right index finger's last bone is unmapped!");
+            }
+            else
+            {
+                if (leftHand == null)
+                    warnings.Add("Your avatar rig's left hand is unmapped!");
+                if (rightHand == null)
+                    warnings.Add("Your avatar rig's right hand is unmapped!");
+            }
 
-            if (leftHand == null)
-                warnings.Add("Your avatar rig's left hand is unmapped!");
-
-            if (rightHand == null)
-                warnings.Add("Your avatar rig's right hand is unmapped!");
-
-            if(localSpace) {
+            if(localSpace && !isQuest) {
                 if(hips == null)
                     warnings.Add("Your avatar rig's hips are unmapped!");
                 if(chest == null)

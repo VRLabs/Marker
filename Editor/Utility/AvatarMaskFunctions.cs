@@ -202,7 +202,7 @@ namespace VRLabs.Marker
             EditorUtility.SetDirty(mask);
 
             // get all transform hierarchy paths on the avatar
-            List<string> allTransformPaths = descriptor.transform.GetComponentsInChildren<Transform>()
+            List<string> allTransformPaths = descriptor.transform.GetComponentsInChildren<Transform>(true)
                 .Select(t => t.GetHierarchyPath(descriptor.transform))
                 .ToList();
 
@@ -228,16 +228,8 @@ namespace VRLabs.Marker
             {
                 foreach (string path in GetPathsInAnimation(animation, false))
                 {
-                    if (maskDict.ContainsKey(path))
-                    {
+                    if (maskDict.ContainsKey(path) && path.Length > 0)
                         mask.SetTransformActive(maskDict[path], false);
-                    }
-                    else
-                    {
-                        mask.AddTransformPath(placeholder.transform);
-                        mask.SetTransformPath(mask.transformCount - 1, path);
-                        mask.SetTransformActive(mask.transformCount - 1, false);
-                    }
                 }
             }
 

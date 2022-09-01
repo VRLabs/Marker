@@ -26,7 +26,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 5050032956962849426}
@@ -119,7 +119,7 @@ AnimatorStateTransition:
     m_ConditionEvent: GestureLeft
     m_EventTreshold: 3
   - m_ConditionMode: 1
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 6793819886721924663}
@@ -188,7 +188,7 @@ AnimatorStateMachine:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Gesture L
+  m_Name: VRLabs/Marker/Gesture L
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 1601618310108605750}
@@ -221,7 +221,7 @@ AnimatorStateTransition:
     m_ConditionEvent: GestureRight
     m_EventTreshold: 3
   - m_ConditionMode: 1
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 7040433293507960512}
@@ -246,27 +246,27 @@ AnimatorController:
   m_Name: M_Gesture
   serializedVersion: 5
   m_AnimatorParameters:
-  - m_Name: M_Marker
+  - m_Name: VRLabs/Marker/Enable
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: GestureLeft
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: GestureRight
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   m_AnimatorLayers:
   - serializedVersion: 5
-    m_Name: M_Gesture L
+    m_Name: VRLabs/Marker/Gesture L
     m_StateMachine: {fileID: -1302460723305187429}
     m_Mask: {fileID: 31900000, guid: ef42cd48529ef6c48a5255a700a6bf44, type: 2}
     m_Motions: []
@@ -278,7 +278,7 @@ AnimatorController:
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
   - serializedVersion: 5
-    m_Name: M_Gesture R
+    m_Name: VRLabs/Marker/Gesture R
     m_StateMachine: {fileID: 1611126274159281042}
     m_Mask: {fileID: 31900000, guid: 14ab48b6310ef234698202dd3f3707f4, type: 2}
     m_Motions: []
@@ -325,7 +325,7 @@ AnimatorStateMachine:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Gesture R
+  m_Name: VRLabs/Marker/Gesture R
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 7040433293507960512}
@@ -385,7 +385,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 2
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1601618310108605750}
@@ -556,7 +556,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 2
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 5050032956962849426}
@@ -609,7 +609,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 2
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 3
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 2918854549905536856}
@@ -657,7 +657,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 2918854549905536856}
@@ -682,7 +682,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 2
-    m_ConditionEvent: M_Marker
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 4505483479815196686}
