@@ -2,6 +2,7 @@
 #if UNITY_EDITOR
 
 using UnityEngine;
+using UnityEditor;
 using UnityEngine.Animations;
 
 namespace VRLabs.Marker
@@ -19,6 +20,42 @@ namespace VRLabs.Marker
 
         public bool generateMasterMask = true;
 
+        public void OnDrawGizmos()
+        {
+            float viewDist = SceneView.currentDrawingSceneView.cameraDistance;
+            bool isCrossedOver = markerTargetLeft.transform.position.x >= markerTargetRight.transform.position.x;
+
+            // left
+
+            Gizmos.color = isCrossedOver ? Color.red : Color.gray;
+            Handles.color =  isCrossedOver ? Color.red : Color.gray;
+            Handles.DrawDottedLine(markerTargetLeft.transform.position, markerTargetLeft.transform.parent.position, Mathf.Max(viewDist * 5, 5));
+            Gizmos.DrawWireSphere(markerTargetLeft.transform.position, Mathf.Min(0.025f * viewDist, 0.005f));
+
+            Gizmos.color = isCrossedOver ? Color.red : Color.white;
+            Handles.color = isCrossedOver ? Color.red : Color.white;
+            Vector3 leftPos = markerTargetLeft.transform.position;
+            leftPos.y += Mathf.Max(0.05f * viewDist, 0.0099f);
+            Handles.Label(leftPos, "Left Target");
+            Gizmos.DrawLine(leftPos, markerTargetLeft.transform.position);
+
+            // right
+            Gizmos.color = isCrossedOver ? Color.red : Color.gray;
+            Handles.color = isCrossedOver ? Color.red : Color.gray;
+            Handles.DrawDottedLine(markerTargetRight.transform.position, markerTargetRight.transform.parent.position, Mathf.Max(viewDist * 5, 5));
+            Gizmos.DrawWireSphere(markerTargetRight.transform.position, Mathf.Min(0.025f * viewDist, 0.005f));
+
+            Gizmos.color = isCrossedOver ? Color.red : Color.white;
+            Handles.color = isCrossedOver ? Color.red : Color.white;
+            Vector3 rightPos = markerTargetRight.transform.position;
+            rightPos.y += Mathf.Max(0.05f * viewDist, 0.0099f);
+            Handles.Label(rightPos, "Right Target");
+            Gizmos.DrawLine(rightPos, markerTargetRight.transform.position);
+
+            Gizmos.color = Color.white;
+            Handles.color = Color.white;
+        }
+
         public void Update()
         {
             if (finished && system != null) // constantly uniformly scale Draw and Eraser (System) with MarkerTarget
@@ -29,20 +66,12 @@ namespace VRLabs.Marker
                 {
                     system.GetComponent<ScaleConstraint>().enabled = false;
                     scale.x = 1.0f;
-                    //if (!eraserSize) // but the eraser *does* need adjustment
-                    //{
-                    //    float f = 0.05f * markerTarget.lossyScale.x;
-                    //    eraser.localScale = new Vector3(f, f, f);
-                    //}
                 }
                 else
                 {
                     system.GetComponent<ScaleConstraint>().enabled = true;
-                    //if (!eraserSize)
-                    //{
-                    //    eraser.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-                    //}
                 }
+
                 scale.y = scale.x;
                 scale.z = scale.x;
                 system.localScale = scale;
@@ -50,8 +79,23 @@ namespace VRLabs.Marker
                 Transform draw = system.Find("Draw");
                 ParticleSystem.TriggerModule triggerModule = draw.GetComponent<ParticleSystem>().trigger;
                 triggerModule.radiusScale = scale.x * 0.6f; // bit more than half is OK
+
+                /*
+                markerTargetLeft.transform.SetPositionAndRotation(
+                    new Vector3(
+                        markerTargetRight.transform.position.x * -1,
+                        markerTargetRight.transform.position.y,
+                        markerTargetRight.transform.position.z
+                    ),
+                    Quaternion.Euler(
+                        markerTargetRight.transform.rotation.eulerAngles.x * -1,
+                        markerTargetRight.transform.rotation.eulerAngles.y * -1,
+                        markerTargetRight.transform.rotation.eulerAngles.z * -1
+                    )
+                );*/
             }
         }
+        
         public void OnDestroy()
         {
             if (finished)

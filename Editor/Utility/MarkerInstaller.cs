@@ -174,18 +174,18 @@ namespace VRLabs.Marker
             }
 
             // Set parameter driver on 'Clear' state to reset local space
-            AnimatorState state = FX.layers[0].stateMachine.states.FirstOrDefault(s => s.state.name.Equals("Clear")).state;
-            VRCAvatarParameterDriver driver = (VRCAvatarParameterDriver)state.behaviours[0];
-            string driverParamName = marker.localSpace ? "M_Space" : "M_SpaceSimple";
-            VRC.SDKBase.VRC_AvatarParameterDriver.Parameter param = new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter()
+            /*AnimatorState state = FX.layers[0].stateMachine.states.FirstOrDefault(s => s.state.name.Equals("Clear")).state;
+            //VRCAvatarParameterDriver driver = (VRCAvatarParameterDriver)state.behaviours[0];
+            //string driverParamName = marker.localSpace ? "M_Space" : "M_SpaceSimple";
+            //VRC.SDKBase.VRC_AvatarParameterDriver.Parameter param = new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter()
             {
                 name = driverParamName,
                 type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set,
                 value = 0f
             };
-            driver.parameters.Add(param);
-
-            EditorUtility.SetDirty(FX);
+            //driver.parameters.Add(param);
+            */
+            if(FX) EditorUtility.SetDirty(FX);
             return FX;
         }
 
@@ -276,7 +276,7 @@ namespace VRLabs.Marker
             Transform markerTargetLeft = targets.Find("MarkerTargetLeft");
             Transform markerTargetRight = targets.Find("MarkerTargetRight");
             Transform markerModel = targets.Find("Model");
-            Transform eraser = system.Find("Eraser");
+            //Transform eraser = system.Find("Eraser");
             Transform local = markerPrefab.transform.Find("World").Find("Local");
 
             // constrain cull object to avatar
@@ -289,7 +289,7 @@ namespace VRLabs.Marker
 
             if (marker.useIndexFinger)
             {
-                GameObject.DestroyImmediate(markerTargetLeft.GetChild(0).gameObject); // destroy Flip
+                GameObject.DestroyImmediate(targets.Find("Marker Flip").gameObject);// markerTargetLeft.GetChild(0).gameObject); // destroy Flip
                 Transform indexDistalLeft = avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal);
                 Transform indexDistalRight = avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal);
 
@@ -377,6 +377,14 @@ namespace VRLabs.Marker
             // set anything not adjustable to a medium-ish amount
             if (!marker.eraserSize)
             {
+                List<Material> sharedMats = new List<Material>();
+                markerModel.GetComponent<MeshRenderer>().GetSharedMaterials(sharedMats);
+                sharedMats[1].SetFloat("_EraserSize", 0.8419998f);
+
+                SphereCollider collider = markerModel.GetComponent<SphereCollider>();
+                collider.radius = 0.018f;
+                collider.center = new Vector3(collider.center.x, 0.196f, collider.center.z);
+
                 //eraser.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
             }
             if (!marker.brushSize)
@@ -402,6 +410,7 @@ namespace VRLabs.Marker
 
             marker.system = system;
             marker.markerTargetRight = markerTargetRight;
+            marker.markerTargetLeft = markerTargetLeft;
         }
 
         public static Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> GeneratePC(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
@@ -417,7 +426,7 @@ namespace VRLabs.Marker
             if (!marker.useIndexFinger) {
                 controllers.Add(
                     ScriptFunctions.PlayableLayer.Gesture, 
-                    GeneratePCAnimatorGesture(descriptor, marker, directory)
+                    GeneratePCAnimatorGesture(descriptor, marker, $"{directory}/")
                 );
             }
 
@@ -431,41 +440,41 @@ namespace VRLabs.Marker
             { name = "VRLabs/Marker/Clear", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
             p_color = new VRCExpressionParameters.Parameter
             { name = "VRLabs/Marker/Color", valueType = VRCExpressionParameters.ValueType.Float, saved = true };
-            ScriptFunctions.AddParameter(descriptor, p_marker, directory);
-            ScriptFunctions.AddParameter(descriptor, p_eraser, directory);
-            ScriptFunctions.AddParameter(descriptor, p_clear, directory);
-            ScriptFunctions.AddParameter(descriptor, p_color, directory);
+            ScriptFunctions.AddParameter(descriptor, p_marker, $"{directory}/");
+            ScriptFunctions.AddParameter(descriptor, p_eraser, $"{directory}/");
+            ScriptFunctions.AddParameter(descriptor, p_clear, $"{directory}/");
+            ScriptFunctions.AddParameter(descriptor, p_color, $"{directory}/");
 
             // Menus
             if (marker.localSpace)
             {
                 VRCExpressionParameters.Parameter p_space = new VRCExpressionParameters.Parameter
                 { name = "VRLabs/Marker/Space", valueType = VRCExpressionParameters.ValueType.Int, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_space, directory);
+                ScriptFunctions.AddParameter(descriptor, p_space, $"{directory}/");
             }
             else
             {
                 VRCExpressionParameters.Parameter p_spaceSimple = new VRCExpressionParameters.Parameter
                 { name = "VRLabs/Marker/SpaceSimple", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_spaceSimple, directory);
+                ScriptFunctions.AddParameter(descriptor, p_spaceSimple, $"{directory}/");
             }
 
             if (marker.brushSize)
             {
                 VRCExpressionParameters.Parameter p_size = new VRCExpressionParameters.Parameter
                 { name = "VRLabs/Marker/Size", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_size, directory);
+                ScriptFunctions.AddParameter(descriptor, p_size, $"{directory}/");
             }
             if (marker.eraserSize)
             {
                 VRCExpressionParameters.Parameter p_eraserSize = new VRCExpressionParameters.Parameter
                 { name = "VRLabs/Marker/EraserSize", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
-                ScriptFunctions.AddParameter(descriptor, p_eraserSize, directory);
+                ScriptFunctions.AddParameter(descriptor, p_eraserSize, $"{directory}/");
             }
 
             VRCExpressionParameters.Parameter p_menu = new VRCExpressionParameters.Parameter
             { name = "VRLabs/Marker/Menu", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
-            ScriptFunctions.AddParameter(descriptor, p_menu, directory);
+            ScriptFunctions.AddParameter(descriptor, p_menu, $"{directory}/");
 
             // handle menu instancing
             AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu.asset", $"{directory}/Marker Menu.asset");
@@ -499,10 +508,16 @@ namespace VRLabs.Marker
             }
 
             if (!marker.brushSize)
+            {
                 ScriptFunctions.RemoveMenuControl(markerMenu, "Brush Size");
+                ScriptFunctions.RemoveMenuControl(markerMenu, "<color=#FFFFFF>Brush Size");
+            }
 
             if (!marker.eraserSize)
+            {
                 ScriptFunctions.RemoveMenuControl(markerMenu, "Eraser Size");
+                ScriptFunctions.RemoveMenuControl(markerMenu, "<color=#FFFFFF>Eraser Size");
+            }
 
             EditorUtility.SetDirty(markerMenu);
 
@@ -512,7 +527,7 @@ namespace VRLabs.Marker
                 $"{A_SHARED_RESOURCES_DIR}/Icons/M_Icon_Menu.png",
                 typeof(Texture2D)
             ) as Texture2D;
-            ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
+            ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", $"{directory}/", pm_menu, markerIcon);
 
             return controllers;
         }
