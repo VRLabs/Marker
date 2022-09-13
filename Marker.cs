@@ -17,11 +17,15 @@ namespace VRLabs.Marker
 
         public Transform markerTargetLeft, markerTargetRight, markerModel, system;
         public bool finished = false;
+        public bool showGizmos = true;
 
         public bool generateMasterMask = true;
 
         public void OnDrawGizmos()
         {
+            if (!showGizmos || !finished)
+                return;
+
             float viewDist = SceneView.currentDrawingSceneView.cameraDistance;
             bool isCrossedOver = markerTargetLeft.transform.position.x >= markerTargetRight.transform.position.x;
 

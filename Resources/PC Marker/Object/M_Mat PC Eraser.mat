@@ -75,7 +75,7 @@ Material:
     - _DistortionStrengthScaled: 0
     - _DstBlend: 1
     - _EmissionEnabled: 1
-    - _EraserSize: 0.8419998
+    - _EraserSize: 0
     - _FlipbookMode: 0
     - _GlossMapScale: 1
     - _Glossiness: 0

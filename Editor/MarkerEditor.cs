@@ -134,20 +134,6 @@ namespace VRLabs.Marker
                 Undo.RecordObject(markerTargetObject.transform, "Rotate Marker");
                 markerTargetObject.transform.rotation = rot;
             }
-
-
-            return;
-            // view stuff
-            float viewDist = SceneView.currentDrawingSceneView.cameraDistance;
-            Handles.DrawDottedLine(markerTargetObject.transform.position, markerTargetObject.transform.parent.position, Mathf.Max(viewDist * 5, 5));
-            Handles.SphereHandleCap(0, markerTargetObject.transform.position, markerTargetObject.transform.rotation, Mathf.Min(0.05f * viewDist, 0.005f), EventType.Repaint);
-            
-            Vector3 leftPos = markerTargetObject.transform.position;
-            leftPos.y += Mathf.Max(0.05f * viewDist, 0.0099f);
-            Handles.Label(leftPos, "Target");
-            GUI.color = Color.gray;
-            Handles.DrawLine(leftPos, markerTargetObject.transform.position);
-            GUI.color = Color.white;
         }
 
         void InitStyles() {
@@ -328,15 +314,25 @@ namespace VRLabs.Marker
             {
                 GUILayout.Space(8);
 
-                adjustInLocalSpace = EditorGUILayout.ToggleLeft(
-                    new GUIContent("Local Position", "Move the marker along local/worldspace coordinates"), 
-                    adjustInLocalSpace
+                marker.showGizmos = EditorGUILayout.ToggleLeft(
+                    "Show Gizmos", 
+                    marker.showGizmos
                 );
 
-                mirrorPosition = EditorGUILayout.ToggleLeft(
-                    new GUIContent("Mirror Position", "Move both marker target positions simultaneously"),
-                    mirrorPosition
-                );
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    adjustInLocalSpace = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Local Position", "Move the marker along local/worldspace coordinates"),
+                        adjustInLocalSpace, 
+                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 2)
+                    );
+
+                    mirrorPosition = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Mirror Position", "Move both marker target positions simultaneously"),
+                        mirrorPosition, 
+                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
+                    );
+                }
 
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button(new GUIContent("Adjust Right Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
