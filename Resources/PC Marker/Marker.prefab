@@ -443,7 +443,7 @@ Transform:
   - {fileID: 977957564041919233}
   - {fileID: 7479069810017489411}
   - {fileID: 6597001291009686119}
-  - {fileID: 8166394295230071261}
+  - {fileID: 296686673822208713}
   m_Father: {fileID: 1839907483144463022}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -477,7 +477,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2513942669017515639}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!199 &1839907484943009037
 ParticleSystemRenderer:
@@ -5246,6 +5246,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+  - {fileID: 8166394295230071261}
   - {fileID: 1839907484943009024}
   m_Father: {fileID: 1839907483144463022}
   m_RootOrder: 0
@@ -5267,7 +5268,7 @@ ScaleConstraint:
   m_IsContraintActive: 1
   m_IsLocked: 1
   m_Sources:
-  - sourceTransform: {fileID: 6597001291009686119}
+  - sourceTransform: {fileID: 296686673822208713}
     weight: 1
 --- !u!1 &2393602318496038491
 GameObject:
@@ -5390,6 +5391,36 @@ Transform:
   m_Father: {fileID: 1839907484866255012}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6403059054311957823
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 296686673822208713}
+  m_Layer: 0
+  m_Name: MarkerScale
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &296686673822208713
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6403059054311957823}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1839907484866255012}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6699153588247310164
 GameObject:
   m_ObjectHideFlags: 0
@@ -5460,7 +5491,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8166394295230071261}
   - component: {fileID: 3144162644828123901}
-  - component: {fileID: 6775076494345819077}
   - component: {fileID: 2141732362620736508}
   - component: {fileID: 3419114032121419088}
   - component: {fileID: 3035398333166739310}
@@ -5482,8 +5512,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 1839907484866255012}
-  m_RootOrder: 3
+  m_Father: {fileID: 2513942669017515639}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1773428102 &3144162644828123901
 ParentConstraint:
@@ -5510,27 +5540,6 @@ ParentConstraint:
   m_IsLocked: 1
   m_Sources:
   - sourceTransform: {fileID: 977957564041919233}
-    weight: 1
---- !u!1818360610 &6775076494345819077
-ScaleConstraint:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8799766441370278759}
-  m_Enabled: 1
-  m_Weight: 1
-  m_ScaleAtRest: {x: 1, y: 1, z: 1}
-  m_ScaleOffset: {x: 1, y: 1, z: 1}
-  m_AffectScalingX: 1
-  m_AffectScalingY: 1
-  m_AffectScalingZ: 1
-  m_IsContraintActive: 1
-  m_IsLocked: 1
-  m_Sources:
-  - sourceTransform: {fileID: 6597001291009686119}
-    weight: 1
-  - sourceTransform: {fileID: 7479069810017489411}
     weight: 1
 --- !u!135 &2141732362620736508
 SphereCollider:

@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: M_Mat PC Eraser
   m_Shader: {fileID: 4800000, guid: 2bd1ac25615aa5049b180d78a1b9a7c8, type: 3}
-  m_ShaderKeywords: _ALPHABLEND_ON _EMISSION
+  m_ShaderKeywords: _ALPHABLEND_ON _EMISSION _TOGGLE_ON
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -75,7 +75,7 @@ Material:
     - _DistortionStrengthScaled: 0
     - _DstBlend: 1
     - _EmissionEnabled: 1
-    - _EraserSize: 0
+    - _EraserSize: 0.8419998
     - _FlipbookMode: 0
     - _GlossMapScale: 1
     - _Glossiness: 0
@@ -93,7 +93,7 @@ Material:
     - _SoftParticlesNearFadeDistance: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 5
-    - _Toggle: 0
+    - _Toggle: 1
     - _UVSec: 0
     - _ZWrite: 0
     - __dirty: 0

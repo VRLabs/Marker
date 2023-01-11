@@ -60,6 +60,7 @@ namespace VRLabs.Marker
             AnimatorController avatarGesture = descriptor.baseAnimationLayers[2].animatorController as AnimatorController;
             if (avatarGesture != null)
             {
+                EditorUtility.SetDirty(avatarGesture);
                 for (int i = 0; i < avatarGesture.layers.Length; i++)
                 {   // the controls' layer is normally 3 (AllParts, LeftHand, RightHand, >>>M_Gesture<<<)
                     if (avatarGesture.layers[i].name.Contains("VRLabs/Marker/Gesture") && (i != 3))
@@ -77,7 +78,6 @@ namespace VRLabs.Marker
                 }
             }
 
-            EditorUtility.SetDirty(avatarGesture);
 
             // Generate and apply master Avatar Mask
             if (marker.generateMasterMask)
@@ -124,11 +124,11 @@ namespace VRLabs.Marker
 
                     for (int i = 0; i < bonesToSearch.Length; i++)
                     {
-                        GameObject foundTargetPCLeft = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget Left", true);
+                        GameObject foundTargetPCLeft = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTargetLeft", true);
                         if (foundTargetPCLeft != null)
                             GameObject.DestroyImmediate(foundTargetPCLeft);
 
-                        GameObject foundTargetPCRight = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget Right", true);
+                        GameObject foundTargetPCRight = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTargetRight", true);
                         if (foundTargetPCRight != null)
                             GameObject.DestroyImmediate(foundTargetPCRight);
 
@@ -275,8 +275,8 @@ namespace VRLabs.Marker
             Transform targets = markerPrefab.transform.Find("Targets");
             Transform markerTargetLeft = targets.Find("MarkerTargetLeft");
             Transform markerTargetRight = targets.Find("MarkerTargetRight");
-            Transform markerModel = targets.Find("Model");
-            //Transform eraser = system.Find("Eraser");
+            Transform markerModel = system.Find("Model");
+            Transform markerScale = targets.Find("MarkerScale");
             Transform local = markerPrefab.transform.Find("World").Find("Local");
 
             // constrain cull object to avatar
@@ -310,7 +310,7 @@ namespace VRLabs.Marker
             }
             else // using model: scale Model to target freely, and until script is destroyed, scale System to target uniformly with X-axis 
             {
-                markerModel.SetParent(markerPrefab.transform); // move it out of Targets hierarchy
+                //markerModel.SetParent(system); // move it out of Targets hierarchy
 
                 Transform handLeft = avatar.GetBoneTransform(HumanBodyBones.LeftHand);
                 Transform handRight = avatar.GetBoneTransform(HumanBodyBones.RightHand);
@@ -411,6 +411,7 @@ namespace VRLabs.Marker
             marker.system = system;
             marker.markerTargetRight = markerTargetRight;
             marker.markerTargetLeft = markerTargetLeft;
+            marker.markerScale = markerScale;
         }
 
         public static Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> GeneratePC(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)

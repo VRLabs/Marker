@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.Animations;
+using UnityEngine.Timeline;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using Vector3 = UnityEngine.Vector3;
@@ -34,8 +35,7 @@ namespace VRLabs.Marker
         int memoryAvailable;
 
         // movement
-        GameObject markerTargetObject;
-        GameObject lastMarkerTargetObject;
+        GameObject markerTargetObject, lastMarkerTargetObject, markerScale;
         bool adjustInLocalSpace, mirrorPosition;
 
         // styles
@@ -80,10 +80,10 @@ namespace VRLabs.Marker
             useIndexFinger = marker.useIndexFinger;
             localSpaceFullBody = marker.localSpaceFullBody;
             generateMasterMask = marker.generateMasterMask;
+            markerScale = marker.markerScale.gameObject;
 
             SetPreviousInstallSettings();
         }
-
 
         private void OnSceneGUI()
         {
@@ -96,22 +96,30 @@ namespace VRLabs.Marker
                 lastMarkerTargetObject = markerTargetObject;
             }
 
-            // position
-            EditorGUI.BeginChangeCheck();
-            Vector3 pos = Handles.PositionHandle(
-                markerTargetObject.transform.position,
-                adjustInLocalSpace ? markerTargetObject.transform.rotation : Quaternion.identity
-            );
-            if (EditorGUI.EndChangeCheck()) {
-                if(!mirrorPosition) {
-                    Undo.RecordObject(marker, "Move Marker");
-                    markerTargetObject.transform.position = pos;
-                } else {
-                    Undo.RecordObjects(new UnityEngine.Object[] {
-                        marker.markerTargetLeft.transform,
-                        marker.markerTargetRight.transform
-                    }, "Move Marker");
+            // pos rot scale
+            Vector3 pos = markerTargetObject.transform.position;
+            Quaternion rot = markerTargetObject.transform.rotation;
+            Vector3 scale = ((Marker)target).markerScale.transform.localScale;
 
+            EditorGUI.BeginChangeCheck();
+            Handles.TransformHandle(ref pos, ref rot, ref scale);
+            if (EditorGUI.EndChangeCheck())
+            {
+                UnityEngine.Object[] undoObjects = new UnityEngine.Object[mirrorPosition ? 3 : 1];
+                undoObjects[0] = ((Marker)target).markerScale.transform;
+                if(mirrorPosition) {
+                    undoObjects[1] = marker.markerTargetLeft.transform;
+                    undoObjects[2] = marker.markerTargetRight.transform;
+                }
+
+                Undo.RecordObjects(undoObjects, "Move Marker");
+
+                // set rotation 
+                markerTargetObject.transform.position = pos;
+                markerTargetObject.transform.rotation = rot;
+                ((Marker)target).markerScale.transform.localScale = new Vector3(scale.x, scale.y, scale.z);
+
+                if(mirrorPosition) {
                     if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject)) {
                         marker.markerTargetLeft.transform.position = pos;
                         pos.x *= -1;
@@ -122,17 +130,6 @@ namespace VRLabs.Marker
                         marker.markerTargetLeft.transform.position = pos;
                     }
                 }
-            }
-
-            // rotation
-            EditorGUI.BeginChangeCheck();
-            Quaternion rot = Handles.RotationHandle(
-                markerTargetObject.transform.rotation,
-                markerTargetObject.transform.position
-            );
-            if (EditorGUI.EndChangeCheck()) {
-                Undo.RecordObject(markerTargetObject.transform, "Rotate Marker");
-                markerTargetObject.transform.rotation = rot;
             }
         }
 
@@ -380,11 +377,12 @@ namespace VRLabs.Marker
                 }
                 EditorGUILayout.EndHorizontal();
 
-                if(GUILayout.Button("Reset Position and Rotation")) {
+                if(GUILayout.Button("Reset Marker Target")) {
                     marker.markerTargetLeft.transform.localPosition = Vector3.zero;
                     marker.markerTargetLeft.transform.localRotation = Quaternion.Euler(180, 0,0);
                     marker.markerTargetRight.transform.localPosition = Vector3.zero;
                     marker.markerTargetRight.transform.localRotation = Quaternion.Euler(180,0,0);
+                    ((Marker)target).markerScale.localScale = Vector3.one;
                 }
 
                 GUILayout.Space(8);

@@ -15,7 +15,7 @@ namespace VRLabs.Marker
         public int localSpaceFullBody;
         public int gestureToDraw = 3;
 
-        public Transform markerTargetLeft, markerTargetRight, markerModel, system;
+        public Transform markerTargetLeft, markerTargetRight, markerModel, system, markerScale;
         public bool finished = false;
         public bool showGizmos = true;
 
@@ -66,7 +66,7 @@ namespace VRLabs.Marker
             {
                 Vector3 scale = system.localScale;
                 //Transform eraser = system.Find("Eraser");
-                if (markerTargetRight.lossyScale.x < 1.0f) // don't scale down too much for small avatars, breaks
+                /*if (markerTargetRight.lossyScale.x < 1.0f) // don't scale down too much for small avatars, breaks
                 {
                     system.GetComponent<ScaleConstraint>().enabled = false;
                     scale.x = 1.0f;
@@ -74,7 +74,7 @@ namespace VRLabs.Marker
                 else
                 {
                     system.GetComponent<ScaleConstraint>().enabled = true;
-                }
+                }*/
 
                 scale.y = scale.x;
                 scale.z = scale.x;
