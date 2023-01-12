@@ -40,6 +40,7 @@ namespace VRLabs.Marker
 
         // styles
         GUIStyle boxStyle, titleStyle, buttonStyle;
+        Texture2D splash;
 
         // private stuff
         private string[] gestureOptions = new string[] {
@@ -59,9 +60,10 @@ namespace VRLabs.Marker
         private void OnEnable()
         {
             mirrorPosition = true;
-            isQuest = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
+            ((Marker)target).isQuest = isQuest = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
             platformIcon = Resources.Load<Texture2D>(isQuest ? $"{R_ICON_DIR}/Meta" : $"{R_ICON_DIR}/Windows");
             marker = target as Marker;
+            splash = Resources.Load<Texture2D>("Media/BG");
         }
 
         public void Reset()
@@ -159,6 +161,10 @@ namespace VRLabs.Marker
 
             // title
             GUILayout.Space(8);
+
+            //EditorGUI.DrawPreviewTexture(new Rect(0, 0, 1714 / 3f, 959 / 3f), splash);
+            //EditorGUI.DrawPreviewTexture(new Rect(0, 0, 1714 / 3f, 959 / 3f), Texture2D.whiteTexture);
+
             using (new EditorGUILayout.HorizontalScope(boxStyle))
             {
                 string label = isQuest
@@ -168,7 +174,7 @@ namespace VRLabs.Marker
                 EditorGUILayout.LabelField(label, titleStyle, GUILayout.MinHeight(20f));
             }
 
-            if (Screen.width > (isQuest ? 370 : 300)) {
+            if (Screen.width > (isQuest ? 370 : 340)) {
                 GUI.DrawTexture(new Rect(25, 8, 32, 32), platformIcon);
                 GUI.DrawTexture(new Rect(Screen.width - 45, 8, 32, 32), platformIcon);
             }
@@ -217,11 +223,13 @@ namespace VRLabs.Marker
                     ), wdSetting);
                 }
 
+                /*
                 generateMasterMask = EditorGUILayout.ToggleLeft(new GUIContent(
                     "Generate Master Mask",
                     "Enable this if you want to generate a master mask for your FX layer - if you animate transforms " +
                     "on your Gesture layer, you will most likely want to check this"
                 ), generateMasterMask);
+                */
 
                 gestureToDraw = EditorGUILayout.Popup(new GUIContent(
                     "Gesture to draw",
@@ -249,6 +257,7 @@ namespace VRLabs.Marker
                         "If unchecked, you can only attach your drawing to yourself."
                     ), localSpace);
 
+                    /*
                     using (new EditorGUI.DisabledGroupScope(!localSpace))
                     {
                         GUIContent[] layoutOptions = {
@@ -263,7 +272,23 @@ namespace VRLabs.Marker
                         localSpaceFullBody = GUILayout.SelectionGrid(localSpaceFullBody, layoutOptions, 1);
                         GUILayout.EndVertical();
                     }
+                    */
+                } else {
+                    using (new EditorGUILayout.HorizontalScope()) {
+                        GUI.color = leftHanded ? Color.white : Color.gray;
+                        if (GUILayout.Button("Left Handed"))
+                            leftHanded = true;
+
+                        GUI.color = leftHanded ? Color.gray : Color.white;
+                        if (GUILayout.Button("Right Handed"))
+                            leftHanded = false;
+
+                        GUI.color = Color.white;
+                    }
+
                 }
+
+
                 if (EditorGUI.EndChangeCheck())
                     ScanAvatar();
 
@@ -293,7 +318,7 @@ namespace VRLabs.Marker
 
                 // "Remove" button
                 bool hasPCInstall = ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedPC, "M_", "Marker");
-                bool hasQuestInstall = ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedQuest, "M_", "Marker");
+                bool hasQuestInstall = ScriptFunctions.HasPreviousInstall(descriptor, string.Empty, playablesUsedQuest, "M_", "Marker");
                 using (new EditorGUI.DisabledGroupScope(!(hasPCInstall || hasQuestInstall)))
                 {
                     if (GUILayout.Button("Remove Marker", buttonStyle))
@@ -307,7 +332,7 @@ namespace VRLabs.Marker
                 }
             }
             // Once script is run
-            else 
+            else if(!isQuest) 
             {
                 GUILayout.Space(8);
 

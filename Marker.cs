@@ -12,7 +12,7 @@ namespace VRLabs.Marker
     {   // data storage
         public bool leftHanded, wdSetting, eraserSize, useIndexFinger;
         public bool brushSize = true, localSpace = true;
-        public int localSpaceFullBody;
+        public int localSpaceFullBody = 1;
         public int gestureToDraw = 3;
 
         public Transform markerTargetLeft, markerTargetRight, markerModel, system, markerScale;
@@ -20,10 +20,11 @@ namespace VRLabs.Marker
         public bool showGizmos = true;
 
         public bool generateMasterMask = true;
+        public bool isQuest;
 
         public void OnDrawGizmos()
         {
-            if (!showGizmos || !finished)
+            if (!showGizmos || !finished || isQuest)
                 return;
 
             float viewDist = SceneView.currentDrawingSceneView.cameraDistance;

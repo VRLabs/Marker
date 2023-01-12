@@ -19,18 +19,14 @@ MonoBehaviour:
     defaultValue: 0
   - name: VRLabs/Marker/Color
     valueType: 1
-    saved: 0
+    saved: 1
     defaultValue: 0
   - name: VRLabs/Marker/Size
     valueType: 1
-    saved: 0
+    saved: 1
     defaultValue: 0
   - name: VRLabs/Marker/Eraser
     valueType: 2
-    saved: 0
-    defaultValue: 0
-  - name: VRLabs/Marker/EraserSize
-    valueType: 1
     saved: 0
     defaultValue: 0
   - name: VRLabs/Marker/Clear
@@ -43,5 +39,5 @@ MonoBehaviour:
     defaultValue: 0
   - name: VRLabs/Marker/LeftHand
     valueType: 2
-    saved: 0
+    saved: 1
     defaultValue: 0

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b2425a2284af743826c689403a4924, type: 3}
+  m_Name: Vertex Color Picker
+  m_EditorClassIdentifier: 
+  m_functionInfo: "// Made with Amplify Shader Editor\n// Available at the Unity
+    Asset Store - http://u3d.as/y3X \n/*ASEBEGIN\nVersion=18935\n3861;57;1862;1064;1127.95;354.7803;1;True;False\nNode;AmplifyShaderEditor.SimpleSubtractOpNode;53;-591.9871,118.0609;Inherit;True;2;0;COLOR;0,0,0,0;False;1;COLOR;0,0,0,0;False;1;COLOR;0\nNode;AmplifyShaderEditor.AbsOpNode;52;-389.9871,119.0609;Inherit;True;1;0;COLOR;0,0,0,0;False;1;COLOR;0\nNode;AmplifyShaderEditor.LengthOpNode;54;-226.9871,118.0609;Inherit;True;1;0;COLOR;0,0,0,0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.RangedFloatNode;57;-63.98712,235.0609;Inherit;False;Constant;_no;no;0;0;Create;True;0;0;0;False;0;False;0;0;0;0;0;1;FLOAT;0\nNode;AmplifyShaderEditor.RangedFloatNode;56;-62.98712,303.0609;Inherit;False;Constant;_yes;yes;0;0;Create;True;0;0;0;False;0;False;1;0;0;0;0;1;FLOAT;0\nNode;AmplifyShaderEditor.ConditionalIfNode;55;104.0129,123.0609;Inherit;True;False;5;0;FLOAT;0;False;1;FLOAT;0.005;False;2;FLOAT;0;False;3;FLOAT;0;False;4;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.LerpOp;59;392.0129,136.0609;Inherit;False;3;0;FLOAT;0;False;1;FLOAT;0;False;2;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.VertexColorNode;58;-788.3872,19.46089;Inherit;False;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4\nNode;AmplifyShaderEditor.FunctionInput;61;211.2128,334.9611;Inherit;False;Lerp;1;0;False;1;0;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.FunctionInput;2;-782.5868,198.2608;Inherit;True;Color
+    Pick;5;1;False;1;0;COLOR;1,0,0,0;False;1;COLOR;0\nNode;AmplifyShaderEditor.FunctionOutput;0;558.1002,133.7;Inherit;False;True;-1;Output;0;False;1;0;FLOAT;0;False;1;FLOAT;0\nWireConnection;53;0;58;0\nWireConnection;53;1;2;0\nWireConnection;52;0;53;0\nWireConnection;54;0;52;0\nWireConnection;55;0;54;0\nWireConnection;55;2;57;0\nWireConnection;55;3;56;0\nWireConnection;55;4;56;0\nWireConnection;59;1;55;0\nWireConnection;59;2;61;0\nWireConnection;0;0;59;0\nASEEND*/\n//CHKSM=1331CF36EE887F64B1B8E5FA653097C7969ABA40"
+  m_functionName: 
+  m_description: 
+  m_additionalIncludes:
+    m_additionalIncludes: []
+    m_outsideIncludes: []
+  m_additionalPragmas:
+    m_additionalPragmas: []
+    m_outsidePragmas: []
+  m_additionalDirectives:
+    m_validData: 0
+    m_isDirty: 0
+    m_moduleName: ' Additional Directives'
+    m_independentModule: 1
+    m_customEdited: 0
+    m_additionalDirectives: []
+    m_shaderFunctionDirectives: []
+    m_nativeDirectives: []
+    m_nativeDirectivesIndex: -1
+    m_nativeDirectivesFoldout: 0
+    m_directivesSaveItems: []
+  m_nodeCategory: 3
+  m_customNodeCategory: 
+  m_previewPosition: 0
+  m_hidden: 0
+  m_url: 

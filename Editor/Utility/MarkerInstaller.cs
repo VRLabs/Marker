@@ -499,11 +499,13 @@ namespace VRLabs.Marker
                     submenuPath, typeof(VRCExpressionsMenu)
                 ) as VRCExpressionsMenu;
 
+                /*
                 if (marker.localSpaceFullBody == 0) // remove left and right foot controls
                 {
                     subMenu.controls.RemoveAt(7);
                     subMenu.controls.RemoveAt(6);
                 }
+                */
                 markerMenu.controls[6].subMenu = subMenu;
                 EditorUtility.SetDirty(subMenu);
             }
@@ -661,6 +663,7 @@ namespace VRLabs.Marker
                     timeParameter = M_COLOR_PARAM
                 };
                 markerLayer.stateMachine.AddState(offState, new Vector2(0, 50));
+                offState.hideFlags = HideFlags.HideInHierarchy;
 
                 AnimatorState drawState = new AnimatorState()
                 {
@@ -671,6 +674,7 @@ namespace VRLabs.Marker
                     timeParameter = M_COLOR_PARAM
                 };
                 markerLayer.stateMachine.AddState(drawState, new Vector2(-130, 120));
+                drawState.hideFlags = HideFlags.HideInHierarchy;
 
                 AnimatorState noDrawState = new AnimatorState() {
                     name="M_NoDraw",
@@ -680,6 +684,7 @@ namespace VRLabs.Marker
                     timeParameter = M_COLOR_PARAM
                 };
                 markerLayer.stateMachine.AddState(noDrawState, new Vector2(130, 120));
+                noDrawState.hideFlags = HideFlags.HideInHierarchy;
 
                 AnimatorState clearState = new AnimatorState() {
                     name="M_Clear",
@@ -689,6 +694,7 @@ namespace VRLabs.Marker
                     timeParameter = M_COLOR_PARAM
                 };
                 markerLayer.stateMachine.AddState(clearState, new Vector2(0, 190));
+                clearState.hideFlags = HideFlags.HideInHierarchy;
 
 
                 // transitions out of MARKER_CLEAR
