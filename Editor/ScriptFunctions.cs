@@ -24,7 +24,7 @@ namespace VRLabs.Marker
             "Assets/VRLabs/Marker/Resources/Default/M_DefaultLocomotion.controller",
             "Assets/VRLabs/Marker/Resources/Default/M_DefaultIdle.controller",
             "Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller",
-            "Assets/VRLabs/Marker/Resources/Default/M_DefaultAction.controllerr"
+            "Assets/VRLabs/Marker/Resources/Default/M_DefaultAction.controller"
         };
 
         // Default parameters
