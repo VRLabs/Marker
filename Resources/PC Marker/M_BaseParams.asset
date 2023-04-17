@@ -17,27 +17,54 @@ MonoBehaviour:
     valueType: 2
     saved: 0
     defaultValue: 0
+    networkSynced: 1
   - name: VRLabs/Marker/Color
     valueType: 1
     saved: 1
     defaultValue: 0
+    networkSynced: 1
   - name: VRLabs/Marker/Size
     valueType: 1
     saved: 1
     defaultValue: 0
+    networkSynced: 1
   - name: VRLabs/Marker/Eraser
     valueType: 2
     saved: 0
     defaultValue: 0
+    networkSynced: 1
   - name: VRLabs/Marker/Clear
     valueType: 2
     saved: 0
     defaultValue: 0
+    networkSynced: 1
   - name: VRLabs/Marker/Space
     valueType: 0
     saved: 0
     defaultValue: 0
+    networkSynced: 1
   - name: VRLabs/Marker/LeftHand
     valueType: 2
     saved: 1
     defaultValue: 0
+    networkSynced: 1
+  - name: VRLabs/Marker/Menu/Enable
+    valueType: 2
+    saved: 1
+    defaultValue: 0
+    networkSynced: 1
+  - name: VRLabs/Marker/Menu/SpaceOpen
+    valueType: 2
+    saved: 0
+    defaultValue: 0
+    networkSynced: 1
+  - name: VRLabs/Marker/Menu/SizeOpen
+    valueType: 2
+    saved: 0
+    defaultValue: 0
+    networkSynced: 1
+  - name: VRLabs/Marker/Menu/ColorOpen
+    valueType: 2
+    saved: 0
+    defaultValue: 0
+    networkSynced: 1

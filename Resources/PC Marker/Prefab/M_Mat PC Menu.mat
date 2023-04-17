@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: M_Mat PC Menu
   m_Shader: {fileID: 4800000, guid: a7ac717836c46f24fa4d6aa78df351af, type: 3}
-  m_ShaderKeywords: _ERASERSELECTED_ON
+  m_ShaderKeywords: 
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -39,6 +39,7 @@ Material:
     - _Float0: 0
     - _Float1: 0
     - _Float3: 0
+    - _Loading: 0
     - _PenSelected: 0
     - _SizeSelected: 0
     - _SliderValue: 0
@@ -52,10 +53,12 @@ Material:
     - _Space8Selected: 0
     - _SpaceSelected: 0
     - __dirty: 0
+    - _offset: 0.02
     m_Colors:
-    - _BackgroundColor: {r: 0.3773585, g: 0.3773585, b: 0.3773585, a: 0}
+    - _BackgroundColor: {r: 0.3773582, g: 0.3773582, b: 0.3773582, a: 0}
+    - _LoadingBarColor: {r: 1, g: 0, b: 0, a: 1}
     - _SelectedColor: {r: 0, g: 1, b: 0.71902657, a: 1}
-    - _SliderBackgroundColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 0}
+    - _SliderBackgroundColor: {r: 0.35849035, g: 0.35849035, b: 0.35849035, a: 0}
     - _SliderCircleColor: {r: 0, g: 1, b: 0.9525311, a: 0}
     - _SliderColor: {r: 0.37201852, g: 0.8301887, b: 0.4226303, a: 0}
     - _SliderForegroundColor: {r: 0.5294118, g: 0.5294118, b: 0.5294118, a: 0}

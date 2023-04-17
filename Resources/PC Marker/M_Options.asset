@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -340790334, guid: 67cc4cb7839cd3741b63733d5adf0442, type: 3}
+  m_Name: M_Options
+  m_EditorClassIdentifier: 
+  controls:
+  - name: <color=#FFD800>Color
+    icon: {fileID: 2800000, guid: a8b2bac8523ba074999c81cb867c4c13, type: 3}
+    type: 203
+    parameter:
+      name: 
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters:
+    - name: VRLabs/Marker/Color
+    labels: []
+  - name: <color=#FFFFFF>Brush/Eraser Size
+    icon: {fileID: 2800000, guid: 505f1630ba294e048b0337e9e05876e5, type: 3}
+    type: 203
+    parameter:
+      name: 
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters:
+    - name: VRLabs/Marker/Size
+    labels: []
+  - name: <color=#FFFFFF>Left Hand
+    icon: {fileID: 2800000, guid: b4a615d4b1248c9499b06aa6ea7adaf3, type: 3}
+    type: 102
+    parameter:
+      name: VRLabs/Marker/LeftHand
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
