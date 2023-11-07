@@ -7,10 +7,9 @@
 
 A marker for drawing.
 
-<div>
-  <img src="https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Main.jpeg" width="100%">
-  <br/>
-</div>
+![Marker-Draw](https://github.com/VRLabs/Marker/assets/76777936/9ab53ed1-ec45-49c9-9f76-bb90394c56e4)
+![Marker-Remove](https://github.com/VRLabs/Marker/assets/76777936/509a7066-7778-40af-ad95-34a65ae9ff27)
+
 
 ## How it works
 
