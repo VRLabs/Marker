@@ -7,8 +7,8 @@
 
 A marker for drawing.
 
-![Marker-Draw](https://github.com/VRLabs/Marker/assets/76777936/9ab53ed1-ec45-49c9-9f76-bb90394c56e4)
-![Marker-Remove](https://github.com/VRLabs/Marker/assets/76777936/509a7066-7778-40af-ad95-34a65ae9ff27)
+![Marker-Draw](https://github.com/VRLabs/Marker/assets/76777936/e64f034a-f2a5-467a-b698-b383164e5422)
+![Marker-Remove](https://github.com/VRLabs/Marker/assets/76777936/a6c657d3-19e1-4e59-950b-bf6d63096fd6)
 
 
 ## How it works
