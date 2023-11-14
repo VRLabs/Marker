@@ -43,4 +43,3 @@ Marker is available as-is under MIT. For more information see [LICENSE](https://
 
 ## Contact us
 
-If you need help, our support channel is on [Discord](https://discord.vrlabs.dev).
