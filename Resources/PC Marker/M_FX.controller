@@ -2185,6 +2185,53 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &-6636632612578752759
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Green
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0.22222224
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0.44444448
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0.6666667
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorHue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 0.6666667
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1101 &-6633363514507320691
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -3363,7 +3410,7 @@ AnimatorState:
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: VRLabs/Marker/Color
+  m_TimeParameter: VRLabs/Marker/ColorHue
 --- !u!114 &-5428095598527630444
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -4042,6 +4089,21 @@ MonoBehaviour:
     destMax: 0
   localOnly: 0
   debugString: 
+--- !u!206 &-4256536528092402006
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: MarkerColor
+  m_Childs: []
+  m_BlendParameter: VRLabs/Marker/Color
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 1
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1102 &-4232212652662266603
 AnimatorState:
   serializedVersion: 6
@@ -4489,6 +4551,53 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &-3820881795184313236
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Red
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.1666667
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.3888889
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.6111111
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.8333333
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorHue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0.1666667
+  m_MaxThreshold: 0.8333333
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!114 &-3754330036427578150
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -4738,6 +4847,45 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!206 &-3311220723998765304
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hue
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: -3820881795184313236}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -6636632612578752759}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 856170825961673274}
+    m_Threshold: 2
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
+    m_Mirror: 0
+  m_BlendParameter: Phone/HueSlider2
+  m_BlendParameterY: Phone/HueSlider2
+  m_MinThreshold: 0
+  m_MaxThreshold: 2
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 4
 --- !u!114 &-3297492981406675686
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -5104,6 +5252,37 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &-2928284468659674109
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Color
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 3406608dc2fd6244e80156f797eaaba9, type: 2}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: _Normalize
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 8565415955690785696}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: _Normalize
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorValue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!206 &-2921321197170172835
 BlendTree:
   m_ObjectHideFlags: 1
@@ -5603,6 +5782,53 @@ BlendTree:
   m_UseAutomaticThresholds: 1
   m_NormalizedBlendValues: 0
   m_BlendType: 0
+--- !u!206 &-1933936598620909790
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Green
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0.22222224
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0.44444448
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 7963e00e63bfd2247a86d85e3f5f839f, type: 2}
+    m_Threshold: 0.6666667
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorHue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 0.6666667
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1102 &-1929700747806780067
 AnimatorState:
   serializedVersion: 6
@@ -5664,12 +5890,12 @@ BlendTree:
   m_Name: Radials
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 6679737425149092132}
+    m_Motion: {fileID: -2928284468659674109}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VRLabs/Marker/_Normalize
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 4418403779447498169}
@@ -5677,7 +5903,7 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VRLabs/Marker/_Normalize
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: -6589329537547914766}
@@ -5685,7 +5911,7 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VRLabs/Marker/_Normalize
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
     m_Mirror: 0
   m_BlendParameter: VRLabs/Marker/_Normalize
   m_BlendParameterY: VRLabs/Marker/_Normalize
@@ -5953,6 +6179,37 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &-1513322308863406340
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Color
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 3406608dc2fd6244e80156f797eaaba9, type: 2}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: _Normalize
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 6849972650384050780}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: _Normalize
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorValue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1101 &-1472551610833186430
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -6008,7 +6265,7 @@ AnimatorState:
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: VRLabs/Marker/Color
+  m_TimeParameter: VRLabs/Marker/ColorHue
 --- !u!1101 &-1419694956205634209
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -6730,6 +6987,53 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!206 &-727008977997174425
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Red
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.1666667
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.3888889
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.6111111
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 44cd1c83fb070f84db31d78552076ae7, type: 2}
+    m_Threshold: 0.8333333
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorHue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0.1666667
+  m_MaxThreshold: 0.8333333
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1101 &-712055413421854743
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -7030,32 +7334,32 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 4270140006292041226}
-    m_Position: {x: -330, y: 370, z: 0}
+    m_Position: {x: -400, y: 370, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -6206951145756370868}
-    m_Position: {x: -330, y: 300, z: 0}
+    m_Position: {x: -400, y: 300, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -6704322762803976696}
-    m_Position: {x: -30, y: 210, z: 0}
+    m_Position: {x: -100, y: 210, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 5066012687048841392}
-    m_Position: {x: -30, y: 260, z: 0}
+    m_Position: {x: -100, y: 260, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 7911376534609279861}
-    m_Position: {x: -30, y: 310, z: 0}
+    m_Position: {x: -100, y: 310, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -7817722055591200713}
-    m_Position: {x: -30, y: 160, z: 0}
+    m_Position: {x: -100, y: 160, z: 0}
   m_ChildStateMachines:
   - serializedVersion: 1
     m_StateMachine: {fileID: -7669980452747507204}
-    m_Position: {x: -330, y: 520, z: 0}
+    m_Position: {x: -400, y: 860, z: 0}
   - serializedVersion: 1
     m_StateMachine: {fileID: -4720798448339065318}
-    m_Position: {x: -190, y: 440, z: 0}
+    m_Position: {x: -100, y: 580, z: 0}
   - serializedVersion: 1
     m_StateMachine: {fileID: 4004327037864988663}
-    m_Position: {x: -460, y: 440, z: 0}
+    m_Position: {x: -700, y: 580, z: 0}
   m_AnyStateTransitions:
   - {fileID: 4533269014143953629}
   - {fileID: -6653418356543188274}
@@ -7065,9 +7369,9 @@ AnimatorStateMachine:
   m_EntryTransitions: []
   m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
-  m_AnyStatePosition: {x: -230, y: 240, z: 0}
-  m_EntryPosition: {x: -400, y: 240, z: 0}
-  m_ExitPosition: {x: -310, y: 200, z: 0}
+  m_AnyStatePosition: {x: -300, y: 240, z: 0}
+  m_EntryPosition: {x: -470, y: 240, z: 0}
+  m_ExitPosition: {x: -380, y: 200, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: -6206951145756370868}
 --- !u!114 &-223924249414008112
@@ -7379,259 +7683,271 @@ AnimatorController:
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: GestureRight
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: GestureLeft
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: GestureLeftWeight
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: GestureRightWeight
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Enable
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/LeftHand
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Eraser
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Clear
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/ChangingSpace
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/SpaceSimple
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Menu/Enable
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Menu/OpenL
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Menu/OpenR
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: VRLabs/Marker/Color
+    m_Controller: {fileID: 0}
+  - m_Name: VRLabs/Marker/ColorHue
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
+  - m_Name: VRLabs/Marker/ColorSaturation
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 0}
+  - m_Name: VRLabs/Marker/ColorValue
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Size
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/EraserSize
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Space
     m_Type: 3
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: VRLabs/Marker/_Normalize
+    m_Controller: {fileID: 0}
+  - m_Name: VRLabs/Marker/_ConstantOne
     m_Type: 1
     m_DefaultFloat: 1
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_PreventCulling
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_Cull
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_LeftHand
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_RightHand
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_UseIndexFinger
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_SliderTrack
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_SliderValue
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Pen
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Eraser
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Size
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Color
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Clear
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space1
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space2
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space3
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space4
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space5
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space6
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space7
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/_AD.Menu_Space8
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Menu/SpaceOpen
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Menu/SizeOpen
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   - m_Name: VRLabs/Marker/Menu/ColorOpen
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
+    m_Controller: {fileID: 0}
   m_AnimatorLayers:
   - serializedVersion: 5
     m_Name: VRLabs/Marker/Draw
@@ -8358,6 +8674,53 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &856170825961673274
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Blue
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 0.3333333
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 0.5555556
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 0.7777778
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorHue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0.3333333
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1101 &858379012065264035
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -10103,7 +10466,7 @@ AnimatorState:
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: VRLabs/Marker/Color
+  m_TimeParameter: VRLabs/Marker/ColorHue
 --- !u!1101 &3187142104888634318
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -10411,12 +10774,12 @@ BlendTree:
   m_Name: Radials
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 768689297413690926}
+    m_Motion: {fileID: -1513322308863406340}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VRLabs/Marker/_Normalize
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7194318559261297257}
@@ -10424,7 +10787,7 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VRLabs/Marker/_Normalize
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 3733419628855929910}
@@ -10432,7 +10795,7 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VRLabs/Marker/_Normalize
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
     m_Mirror: 0
   m_BlendParameter: VRLabs/Marker/_Normalize
   m_BlendParameterY: VRLabs/Marker/_Normalize
@@ -11062,6 +11425,45 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &4350102054856112169
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hue
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: -727008977997174425}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -1933936598620909790}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 8380467425603324002}
+    m_Threshold: 2
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: VRLabs/Marker/_ConstantOne
+    m_Mirror: 0
+  m_BlendParameter: Phone/HueSlider2
+  m_BlendParameterY: Phone/HueSlider2
+  m_MinThreshold: 0
+  m_MaxThreshold: 2
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 4
 --- !u!1101 &4403058800232351760
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -11830,7 +12232,7 @@ AnimatorState:
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: VRLabs/Marker/Color
+  m_TimeParameter: VRLabs/Marker/ColorHue
 --- !u!1101 &5113687419961543461
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -12270,10 +12672,10 @@ AnimatorState:
   m_TimeParameterActive: 0
   m_Motion: {fileID: 7400000, guid: 6843860bb475fbe43a941398d4e3efed, type: 2}
   m_Tag: 
-  m_SpeedParameter: VRLabs/Marker/Color
+  m_SpeedParameter: VRLabs/Marker/ColorHue
   m_MirrorParameter: 
-  m_CycleOffsetParameter: VRLabs/Marker/Color
-  m_TimeParameter: VRLabs/Marker/Color
+  m_CycleOffsetParameter: VRLabs/Marker/ColorHue
+  m_TimeParameter: VRLabs/Marker/ColorHue
 --- !u!114 &5596031557430566125
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -12638,7 +13040,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parameters:
   - type: 3
-    name: VRLabs/Marker/Color
+    name: VRLabs/Marker/ColorHue
     source: VRLabs/Marker/_AD.Menu_SliderValue
     value: 0
     valueMin: 0
@@ -13208,7 +13610,7 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: GestureLeftWeight
     m_Mirror: 0
-  m_BlendParameter: VRLabs/Marker/Color
+  m_BlendParameter: VRLabs/Marker/ColorHue
   m_BlendParameterY: Blend
   m_MinThreshold: 0
   m_MaxThreshold: 1
@@ -13326,6 +13728,37 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!206 &6849972650384050780
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Saturation
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 3406608dc2fd6244e80156f797eaaba9, type: 2}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 4350102054856112169}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorSaturation
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1101 &6863382349184907060
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -13945,10 +14378,10 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 2
-    m_ConditionEvent: VRLabs/Marker/Menu/Enable
+    m_ConditionEvent: VRLabs/Marker/Enable
     m_EventTreshold: 0
   - m_ConditionMode: 2
-    m_ConditionEvent: VRLabs/Marker/Enable
+    m_ConditionEvent: VRLabs/Marker/Menu/Enable
     m_EventTreshold: 0
   - m_ConditionMode: 1
     m_ConditionEvent: VRLabs/Marker/_PreventCulling
@@ -14842,6 +15275,53 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 1
+--- !u!206 &8380467425603324002
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Blue
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 0.3333333
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 0.5555556
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 0.7777778
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 907504d27e2b1164c9e3ecb63c370903, type: 2}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: -1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorHue
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0.3333333
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1102 &8383925120568452967
 AnimatorState:
   serializedVersion: 6
@@ -15110,7 +15590,38 @@ AnimatorState:
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: VRLabs/Marker/Color
+  m_TimeParameter: VRLabs/Marker/ColorHue
+--- !u!206 &8565415955690785696
+BlendTree:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Saturation
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 7400000, guid: 3406608dc2fd6244e80156f797eaaba9, type: 2}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -3311220723998765304}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: IsMirror
+    m_Mirror: 0
+  m_BlendParameter: VRLabs/Marker/ColorSaturation
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
 --- !u!1101 &8575680782422844848
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
