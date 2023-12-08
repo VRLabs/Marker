@@ -1,6 +1,5 @@
-﻿// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0
+// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0
 #if UNITY_EDITOR
-using Boo.Lang;
 using System;
 using System.IO;
 using System.Linq;
