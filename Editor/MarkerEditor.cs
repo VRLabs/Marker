@@ -1,4 +1,4 @@
-// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0
+// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0 / 2022 fix by Betty
 #if UNITY_EDITOR
 using System;
 using System.IO;
