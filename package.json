@@ -2,6 +2,7 @@
     "name": "dev.vrlabs.marker",
     "displayName": "Marker",
     "version": "1.2.999",
+    "license": "MIT",
     "unity": "2019.4",
     "description": "A marker for drawing",
     "author": {
