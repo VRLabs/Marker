@@ -1,26 +1,30 @@
 {
-    "name": "dev.vrlabs.marker",
-    "displayName": "Marker",
-    "version": "1.2.999",
-    "license": "MIT",
-    "unity": "2019.4",
-    "description": "A marker for drawing",
-    "author": {
-        "name": "VRLabs",
-        "email": "mail@vrlabs.dev",
-        "url": "https://vrlabs.dev"
-    },
-    "siteUrl": "https://github.com/VRLabs/Marker",
-    "vpmDependencies": {
-        "com.vrchat.avatars": "3.2 - 3.5"
-    },
-    "legacyFolders": {
-        "Assets\\VRLabs\\Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
-    },
-    "unityPackageDestinationFolder": "Assets/VRLabs/Marker",
-    "unitypackageDestinationFolderMetas": {
-        "Assets/VRLabs": "652a1ba5b00554143bc9a76307dbc4e8",
-        "Assets/VRLabs/Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
-    },
-    "vccRepoCategory": "systems"
+  "name": "dev.vrlabs.marker",
+  "displayName": "Marker",
+  "version": "1.2.999",
+  "license": "MIT",
+  "unity": "2019.4",
+  "description": "A marker for drawing",
+  "author": {
+    "name": "VRLabs",
+    "email": "mail@vrlabs.dev",
+    "url": "https://vrlabs.dev"
+  },
+  "siteUrl": "https://github.com/VRLabs/Marker",
+  "vpmDependencies": {
+    "com.vrchat.avatars": "3.2 - 3.5"
+  },
+  "legacyFolders": {
+    "Assets\\VRLabs\\Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
+  },
+  "unityPackageDestinationFolder": "Assets/VRLabs/Marker",
+  "unitypackageDestinationFolderMetas": {
+    "Assets/VRLabs": "652a1ba5b00554143bc9a76307dbc4e8",
+    "Assets/VRLabs/Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
+  },
+  "vccRepoCategory": "systems",
+  "media": {
+    "previewImage": "https://github.com/VRLabs/Marker/blob/main/Media/Preview.webp",
+    "previewGif": "https://github.com/VRLabs/Marker/blob/main/Media/Preview.gif"
+  }
 }
