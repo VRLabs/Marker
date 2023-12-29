@@ -20,8 +20,8 @@
   "unityPackageDestinationFolder": "Assets/VRLabs/Marker",
   "vccRepoCategory": "systems",
   "media": {
-    "previewImage": "https://github.com/VRLabs/Marker/blob/main/Media/Preview.webp",
-    "previewGif": "https://github.com/VRLabs/Marker/blob/main/Media/Preview.gif"
+    "previewImage": "https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Preview.webp",
+    "previewGif": "https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Preview.gif"
   },
   "unityPackageDestinationFolderMetas": {
     "Assets/VRLabs": "652a1ba5b00554143bc9a76307dbc4e8",
