@@ -17,8 +17,8 @@ A marker for drawing
 
 ### ⬇️ [Download Latest Version](https://github.com/VRLabs/Marker/releases/latest)
 
-<!-- 
-### 📦 [Add to VRChat Creator Companion]() -->
+
+### 📦 [Add to VRChat Creator Companion](https://vrlabs.dev/packages?package=dev.vrlabs.marker)
 
 </div>
 
