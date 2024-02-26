@@ -1,0 +1,30 @@
+{
+  "name": "dev.vrlabs.marker",
+  "displayName": "Marker",
+  "version": "1.2.999",
+  "license": "MIT",
+  "unity": "2019.4",
+  "description": "A marker for drawing",
+  "author": {
+    "name": "VRLabs",
+    "email": "mail@vrlabs.dev",
+    "url": "https://vrlabs.dev"
+  },
+  "siteUrl": "https://github.com/VRLabs/Marker",
+  "vpmDependencies": {
+    "com.vrchat.avatars": "3.2 - 3.5"
+  },
+  "legacyFolders": {
+    "Assets\\VRLabs\\Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
+  },
+  "unityPackageDestinationFolder": "Assets/VRLabs/Marker",
+  "vccRepoCategory": "systems",
+  "media": {
+    "previewImage": "https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Web/Preview.webp",
+    "previewGif": "https://raw.githubusercontent.com/VRLabs/Marker/main/Media/Web/PreviewGif.webp"
+  },
+  "unityPackageDestinationFolderMetas": {
+    "Assets/VRLabs": "652a1ba5b00554143bc9a76307dbc4e8",
+    "Assets/VRLabs/Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
+  }
+}
