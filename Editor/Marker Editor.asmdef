@@ -1,0 +1,18 @@
+{
+    "name": "VRLabs Marker Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2740cbf73e918894f95147c6a53f959c"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
