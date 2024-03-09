@@ -21,10 +21,10 @@ namespace VRLabs.Marker
         // ideally do not use these default paths; manage it from script's end by providing own copy of default animator.
         public static readonly string[] _defaultLayerPath =
         {
-            "Assets/VRLabs/Marker/Resources/Default/M_DefaultLocomotion.controller",
-            "Assets/VRLabs/Marker/Resources/Default/M_DefaultIdle.controller",
-            "Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller",
-            "Assets/VRLabs/Marker/Resources/Default/M_DefaultAction.controller"
+            "Default/M_DefaultLocomotion",
+            "Default/M_DefaultIdle",
+            "Default/M_DefaultGesture",
+            "Default/M_DefaultAction"
         };
 
         // Default parameters
@@ -221,7 +221,7 @@ namespace VRLabs.Marker
             }
             else if (layer < 4) // fx layer has no default layer
             {
-                if ((AssetDatabase.LoadAssetAtPath(_defaultLayerPath[layer], typeof(AnimatorController)) as AnimatorController) == null)
+                if (Resources.Load<AnimatorController>(_defaultLayerPath[layer]) == null)
                 {
                     Debug.LogError("Couldn't find VRChat's default animator controller at path '" + _defaultLayerPath[layer] + "'! Merging was not performed.");
                     return;
@@ -250,7 +250,7 @@ namespace VRLabs.Marker
                 }
                 else
                 {
-                    AssetDatabase.CopyAsset(_defaultLayerPath[layer], pathFromNew);
+                    AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>(_defaultLayerPath[layer])), pathFromNew);
                     controllerOriginal = AssetDatabase.LoadAssetAtPath(pathFromNew, typeof(AnimatorController)) as AnimatorController;
                 }
                 descriptor.baseAnimationLayers[layer].animatorController = controllerOriginal;
