@@ -312,9 +312,9 @@ namespace VRLabs.Marker
 			// Install layers, parameters, and menu before prefab setup
 			// FX layer
 			if (useIndexFinger)
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_FX (Finger).controller", directory + "FXtemp.controller");
+				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("M_FX (Finger)")), directory + "FXtemp.controller");
 			else
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_FX.controller", directory + "FXtemp.controller");
+				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("M_FX")), directory + "FXtemp.controller");
 			AnimatorController FX = AssetDatabase.LoadAssetAtPath(directory + "FXtemp.controller", typeof(AnimatorController)) as AnimatorController;
 
 			// remove controller layers before merging to avatar, corresponding to setup
@@ -374,12 +374,12 @@ namespace VRLabs.Marker
 			AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(FX)); // delete temporary FX layer
 
 			// Gesture layer
-			AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Gesture.controller", directory + "gestureTemp.controller"); // to modify
+			AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("M_Gesture")), directory + "gestureTemp.controller"); // to modify
 			AnimatorController gesture = AssetDatabase.LoadAssetAtPath(directory + "gestureTemp.controller", typeof(AnimatorController)) as AnimatorController;
 
 			if (descriptor.baseAnimationLayers[2].isDefault == true || descriptor.baseAnimationLayers[2].animatorController == null)
 			{
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/Default/M_DefaultGesture.controller", directory + "Gesture.controller");
+				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("Default/M_DefaultGesture")), directory + "Gesture.controller");
 				AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(directory + "Gesture.controller", typeof(AnimatorController)) as AnimatorController;
 
 				descriptor.customExpressions = true;
@@ -400,11 +400,11 @@ namespace VRLabs.Marker
 				{
 					if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture")
 					{
-						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture (Finger).anim", typeof(AnimationClip)) as AnimationClip;
+						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<AnimationClip>("Animations/Gesture/M_Gesture (Finger)")), typeof(AnimationClip)) as AnimationClip;
 					}
 					else if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture Draw")
 					{
-						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Animations/Gesture/M_Gesture Draw (Finger).anim", typeof(AnimationClip)) as AnimationClip;
+						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<AnimationClip>("Animations/Gesture/M_Gesture Draw (Finger)")), typeof(AnimationClip)) as AnimationClip;
 					}
 				}
 			}
@@ -486,7 +486,7 @@ namespace VRLabs.Marker
 			ScriptFunctions.AddParameter(descriptor, p_menu, directory);
 
 			// handle menu instancing
-			AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Menu.asset", directory + "Marker Menu.asset");
+			AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<VRCExpressionsMenu>("M_Menu")), directory + "Marker Menu.asset");
 			VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(directory + "Marker Menu.asset", typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
 			
 			if (!localSpace) // change from submenu to 1 toggle
@@ -499,7 +499,7 @@ namespace VRLabs.Marker
 			}
 			else
 			{
-				AssetDatabase.CopyAsset("Assets/VRLabs/Marker/Resources/M_Menu Space.asset", directory + "Marker Space Submenu.asset");
+				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<VRCExpressionsMenu>("M_Menu Space")), directory + "Marker Space Submenu.asset");
 				VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(directory + "Marker Space Submenu.asset", typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
 
 				if (localSpaceFullBody == 0) // remove left and right foot controls
@@ -521,11 +521,11 @@ namespace VRLabs.Marker
 
 			VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter
 				{ name = "M_Menu" };
-			Texture2D markerIcon = AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Icons/M_Icon_Menu.png", typeof(Texture2D)) as Texture2D;
+			Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<Texture2D>("Icons/M_Icon_Menu")), typeof(Texture2D)) as Texture2D;
 			ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
 
 			// setup in scene
-			GameObject marker = PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath("Assets/VRLabs/Marker/Resources/Marker.prefab", typeof(GameObject))) as GameObject;
+			GameObject marker = PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<GameObject>("Marker")), typeof(GameObject))) as GameObject;
 			if (PrefabUtility.IsPartOfPrefabInstance(marker))
 				PrefabUtility.UnpackPrefabInstance(marker, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 			marker.transform.SetParent(avatar.transform, false);
@@ -629,9 +629,7 @@ namespace VRLabs.Marker
 		private void CheckRequirements()
 		{
 			warnings.Clear();
-			if (!AssetDatabase.IsValidFolder("Assets/VRLabs/Marker"))
-				warnings.Add("The folder at path 'Assets/VRLabs/Marker' could not be found. Make sure you are importing a Unity package and not moving the folder.");
-
+			
 			if (descriptor == null)
 				warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, or create an avatar descriptor here.");
 			else
