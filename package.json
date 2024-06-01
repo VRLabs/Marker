@@ -12,7 +12,7 @@
   },
   "siteUrl": "https://github.com/VRLabs/Marker",
   "vpmDependencies": {
-    "com.vrchat.avatars": "3.2 - 3.5"
+    "com.vrchat.avatars": "3.x.x"
   },
   "legacyFolders": {
     "Assets\\VRLabs\\Marker": "da8faacbf4b324c2d8bb9681e0f9ee6d"
