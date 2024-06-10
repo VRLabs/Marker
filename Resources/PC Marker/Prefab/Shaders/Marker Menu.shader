@@ -2,11 +2,11 @@ Shader "VRLabs/Marker/Marker Menu"
 {
 	Properties
 	{
-		_Cutoff( "Mask Clip Value", Float ) = 0.5
+		_Cutoff( "Mask Clip Value", Float ) = 0.9
 		_SpriteSheet("Sprite Sheet", 2D) = "white" {}
 		_BackgroundColor("Background Color", Color) = (0.2641509,0.2641509,0.2641509,0)
-		_SliderForegroundColor("Slider Foreground Color", Color) = (0.6415094,0.6415094,0.6415094,0)
-		_SliderBackgroundColor("Slider Background Color", Color) = (0.3018868,0.3018868,0.3018868,0)
+		_SliderForegroundColor("Slider Foreground Color", Color) = (0.6415094,0.6415094,0.6415094,1)
+		_SliderBackgroundColor("Slider Background Color", Color) = (0.3018868,0.3018868,0.3018868,1)
 		_LoadingBarColor("Loading Bar Color", Color) = (1,0,0,0.509804)
 		[HDR]_SelectedColor("Selected Color", Color) = (0.1223032,1,0,1)
 		_Loading("Loading", Range( 0 , 1)) = 0
@@ -32,7 +32,7 @@ Shader "VRLabs/Marker/Marker Menu"
 
 	SubShader
 	{
-		Tags{ "RenderType" = "TransparentCutout"  "Queue" = "Geometry+0" "IsEmissive" = "true"  }
+		Tags{ "RenderType" = "Transparent"  "Queue" = "Geometry+0" "IsEmissive" = "true"  }
 		Cull Off
 		CGPROGRAM
 		#pragma target 3.0
@@ -132,11 +132,10 @@ Shader "VRLabs/Marker/Marker Menu"
 			
 			o.Emission = color.rgb;
 			o.Alpha = 1;
-			clip( saturate( ( color.a + isSlider + isBackground ) ) - _Cutoff );
+			clip( color.a - _Cutoff );
 		}
 
 		ENDCG
 	}
 	Fallback "Diffuse"
-	CustomEditor "ASEMaterialInspector"
 }

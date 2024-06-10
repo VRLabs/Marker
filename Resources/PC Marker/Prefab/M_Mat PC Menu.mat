@@ -12,7 +12,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _SPACE3SELECTED_ON
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -39,7 +40,7 @@ Material:
     m_Floats:
     - _ClearSelected: 0
     - _ColorSelected: 0
-    - _Cutoff: 0.5
+    - _Cutoff: 0.9
     - _EraserSelected: 0
     - _Float0: 0
     - _Float1: 0
@@ -47,10 +48,10 @@ Material:
     - _Loading: 0
     - _PenSelected: 0
     - _SizeSelected: 0
-    - _SliderValue: 0
+    - _SliderValue: 0.569
     - _Space1Selected: 0
     - _Space2Selected: 0
-    - _Space3Selected: 0
+    - _Space3Selected: 1
     - _Space4Selected: 0
     - _Space5Selected: 0
     - _Space6Selected: 0
@@ -63,8 +64,8 @@ Material:
     - _BackgroundColor: {r: 0.37735817, g: 0.37735817, b: 0.37735817, a: 0}
     - _LoadingBarColor: {r: 1, g: 0, b: 0, a: 1}
     - _SelectedColor: {r: 0, g: 1, b: 0.71902657, a: 1}
-    - _SliderBackgroundColor: {r: 0.35849035, g: 0.35849035, b: 0.35849035, a: 0}
+    - _SliderBackgroundColor: {r: 0.35849032, g: 0.35849032, b: 0.35849032, a: 1}
     - _SliderCircleColor: {r: 0, g: 1, b: 0.9525311, a: 0}
     - _SliderColor: {r: 0.37201852, g: 0.8301887, b: 0.4226303, a: 0}
-    - _SliderForegroundColor: {r: 0.5294118, g: 0.5294118, b: 0.5294118, a: 0}
+    - _SliderForegroundColor: {r: 0.5294118, g: 0.5294118, b: 0.5294118, a: 1}
   m_BuildTextureStacks: []
