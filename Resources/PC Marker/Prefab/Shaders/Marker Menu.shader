@@ -25,117 +25,146 @@ Shader "VRLabs/Marker/Marker Menu"
 		[Toggle]_Space6Selected("Space 6 Selected", Float) = 0
 		[Toggle]_Space7Selected("Space 7 Selected", Float) = 0
 		[Toggle]_Space8Selected("Space 8 Selected", Float) = 0
-		[HideInInspector] _texcoord2( "", 2D ) = "white" {}
-		[HideInInspector] _texcoord( "", 2D ) = "white" {}
-		[HideInInspector] __dirty( "", Int ) = 1
 	}
 
 	SubShader
 	{
-		Tags{ "RenderType" = "Transparent"  "Queue" = "Geometry+0" "IsEmissive" = "true"  }
-		Cull Off
-		CGPROGRAM
-		#pragma target 3.0
-		#pragma surface surf Unlit keepalpha addshadow fullforwardshadows 
-		struct Input
-		{
-			float4 vertexColor : COLOR;
-			float2 uv_texcoord;
-			float2 uv2_texcoord2;
-		};
-
-		uniform sampler2D _SpriteSheet;
-		uniform float4 _SpriteSheet_ST;
-		uniform float4 _SelectedColor;
-		uniform float _PenSelected;
-		uniform float _EraserSelected;
-		uniform float _SizeSelected;
-		uniform float _ColorSelected;
-		uniform float _SpaceSelected;
-		uniform float _ClearSelected;
-		uniform float4 _SliderForegroundColor;
-		uniform float4 _SliderBackgroundColor;
-		uniform float _SliderValue;
-		uniform float4 _BackgroundColor;
-		uniform float4 _LoadingBarColor;
-		uniform float _Loading;
-		uniform float _Space1Selected;
-		uniform float _Space2Selected;
-		uniform float _Space3Selected;
-		uniform float _Space4Selected;
-		uniform float _Space5Selected;
-		uniform float _Space6Selected;
-		uniform float _Space7Selected;
-		uniform float _Space8Selected;
-		uniform float _Cutoff = 0.5;
-
-		inline half4 LightingUnlit( SurfaceOutput s, half3 lightDir, half atten )
-		{
-			return half4 ( 0, 0, 0, s.Alpha );
+		Tags {
+			"RenderType" = "Transparent"
+			"Queue" = "Geometry+0"
+			"VRCFallback" = "Hidden"			
 		}
+		LOD 100
+		Pass
+		{
+			Cull Off
+			CGPROGRAM
 
-		float isColorClose(float4 color1, float4 color2)
-		{
-			return (length( abs( ( color1 - color2 ) ) ) <= 0.005 ) ? 1.0 : 0.0;
-		}
-		
-		void surf( Input i , inout SurfaceOutput o )
-		{
-			float2 uv_SpriteSheet = i.uv_texcoord * _SpriteSheet_ST.xy + _SpriteSheet_ST.zw;
-			float4 Sprite = tex2D( _SpriteSheet, uv_SpriteSheet );
-			float4 SpriteMasked = ( Sprite * Sprite.a );
-			float4 SpriteUv2 = tex2D( _SpriteSheet, i.uv2_texcoord2 );
-			
-			float menuColors[] = {1, 0.8962694, 0.7379107, 0.4677838, 0.3139888};
-			bool menuEnabled[] = { _PenSelected, _EraserSelected, _SizeSelected, _SpaceSelected, _ClearSelected };
-			float4 color = float4(0,0,0,0);
-			for (int j = 0; j < 5; j++)
+			#pragma fragment frag
+			#pragma vertex vert
+			#pragma multi_compile_fog
+
+            #include "UnityCG.cginc"
+
+			struct appdata
+	        {
+				float4 vertex : POSITION;
+	            float4 vertexColor : COLOR;
+	            float2 uv : TEXCOORD0;
+        		float2 uv2 : TEXCOORD1;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+	        };
+
+			struct v2f
 			{
-				float4 selectedColor = lerp( Sprite , ( Sprite * _SelectedColor ) , menuEnabled[j]);
-				float isSelected = isColorClose(i.vertexColor, float4(0,menuColors[j],0,1));
-				color += ( isSelected * selectedColor );
+				float4 vertex : SV_POSITION;
+				float4 vertexColor : COLOR;
+				float2 uv : TEXCOORD0;
+        		float2 uv2 : TEXCOORD1;
+				UNITY_FOG_COORDS(4)
+				UNITY_VERTEX_OUTPUT_STEREO
+			};
+
+			UNITY_DECLARE_TEX2D(_SpriteSheet);
+			float4 _SpriteSheet_ST;
+			float4 _SelectedColor;
+			float _PenSelected;
+			float _EraserSelected;
+			float _SizeSelected;
+			float _ColorSelected;
+			float _SpaceSelected;
+			float _ClearSelected;
+			float4 _SliderForegroundColor;
+			float4 _SliderBackgroundColor;
+			float _SliderValue;
+			float4 _BackgroundColor;
+			float4 _LoadingBarColor;
+			float _Loading;
+			float _Space1Selected;
+			float _Space2Selected;
+			float _Space3Selected;
+			float _Space4Selected;
+			float _Space5Selected;
+			float _Space6Selected;
+			float _Space7Selected;
+			float _Space8Selected;
+			float _Cutoff = 0.5;
+			
+			float isColorClose(float4 color1, float4 color2)
+			{
+				return (length( abs( ( color1 - color2 ) ) ) <= 0.005 ) ? 1.0 : 0.0;
 			}
 			
-			// Color Button
-			float isColorButton = isColorClose(i.vertexColor, float4(0,0.6172068,0,1));
-			float4 colorButtonColor = lerp(( SpriteMasked + SpriteUv2 ), ( SpriteMasked + ( SpriteUv2 * _SelectedColor ) ) , _ColorSelected);
-			color += (isColorButton * colorButtonColor );
-			
-			// Slider
-			float4 sliderCompletionColor = i.uv_texcoord.x > _SliderValue  ? _SliderBackgroundColor : _SliderForegroundColor;
-			float isSlider = isColorClose(i.vertexColor, float4(0,0,1,1));
-			color += ( ( sliderCompletionColor * isSlider ));
-
-			float isSliderSprite = isColorClose(i.vertexColor, float4(0,0,0.658375,1));
-			color += ( isSliderSprite * Sprite );
-
-			// Background
-			float isBackground = isColorClose(i.vertexColor,float4(0,1,1,1));
-			color += ( isBackground * _BackgroundColor );
-
-			// Loading Bar
-			float isLoadingBar = isColorClose(i.vertexColor, float4( 1,0.35,1,1 )) ;
-			float4 loadingBarBackground = float4(0.04193995,0.04193995,0.04193995,0);
-			float4 loadingBarColor = (i.uv_texcoord.x < _Loading) ? _LoadingBarColor : loadingBarBackground;
-			color += ( isLoadingBar * loadingBarColor );
-			
-			float spaceColors[] = { 1, 0.8148469, 0.708376, 0.6307572, 0.5271155, 0.4507858, 0.3915725, 0.3049874 };
-			bool spaceEnabled[] = { _Space1Selected, _Space2Selected, _Space3Selected, _Space4Selected, _Space5Selected, _Space6Selected, _Space7Selected, _Space8Selected };
-			float4 Sprite2 = tex2D( _SpriteSheet, i.uv2_texcoord2 );
-
-			for (int j = 0; j < 8; j++) 
+			v2f vert(appdata v)
 			{
-				float isSelected = isColorClose(i.vertexColor, float4(spaceColors[j],0,0,1));
-				float4 SpriteColor = lerp( ( SpriteMasked + Sprite2 ) , ( SpriteMasked + ( Sprite2 * _SelectedColor ) ) , spaceEnabled[j]);
-				color += ( isSelected * SpriteColor );
+                v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_OUTPUT(v2f, o);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+				o.uv = v.uv;
+				o.uv2 = v.uv2;
+				o.vertexColor = v.vertexColor;
+				o.vertex = UnityObjectToClipPos(v.vertex)
+				UNITY_TRANSFER_FOG(o,o.vertex);
+				return o;
 			}
-			
-			o.Emission = color.rgb;
-			o.Alpha = 1;
-			clip( color.a - _Cutoff );
-		}
 
-		ENDCG
+			fixed4 frag(v2f i) : SV_Target
+			{
+				float2 uv_SpriteSheet = i.uv * _SpriteSheet_ST.xy + _SpriteSheet_ST.zw;
+				float4 Sprite = UNITY_SAMPLE_TEX2D( _SpriteSheet, uv_SpriteSheet );
+				float4 SpriteMasked = ( Sprite * Sprite.a );
+				float4 SpriteUv2 = UNITY_SAMPLE_TEX2D( _SpriteSheet, i.uv2 );
+				
+				float menuColors[] = {1, 0.8962694, 0.7379107, 0.4677838, 0.3139888};
+				bool menuEnabled[] = { _PenSelected, _EraserSelected, _SizeSelected, _SpaceSelected, _ClearSelected };
+				float4 color = float4(0,0,0,0);
+				for (int j = 0; j < 5; j++)
+				{
+					float4 selectedColor = lerp( Sprite , ( Sprite * _SelectedColor ) , menuEnabled[j]);
+					float isSelected = isColorClose(i.vertexColor, float4(0,menuColors[j],0,1));
+					color += ( isSelected * selectedColor );
+				}
+				
+				// Color Button
+				float isColorButton = isColorClose(i.vertexColor, float4(0,0.6172068,0,1));
+				float4 colorButtonColor = lerp(( SpriteMasked + SpriteUv2 ), ( SpriteMasked + ( SpriteUv2 * _SelectedColor ) ) , _ColorSelected);
+				color += (isColorButton * colorButtonColor );
+				
+				// Slider
+				float4 sliderCompletionColor = i.uv.x > _SliderValue  ? _SliderBackgroundColor : _SliderForegroundColor;
+				float isSlider = isColorClose(i.vertexColor, float4(0,0,1,1));
+				color += ( ( sliderCompletionColor * isSlider ));
+				
+				float isSliderSprite = isColorClose(i.vertexColor, float4(0,0,0.658375,1));
+				color += ( isSliderSprite * Sprite );
+				
+				// Background
+				float isBackground = isColorClose(i.vertexColor,float4(0,1,1,1));
+				color += ( isBackground * _BackgroundColor );
+				
+				// Loading Bar
+				float isLoadingBar = isColorClose(i.vertexColor, float4( 1,0.35,1,1 )) ;
+				float4 loadingBarBackground = float4(0.04193995,0.04193995,0.04193995,0);
+				float4 loadingBarColor = (i.uv.x < _Loading) ? _LoadingBarColor : loadingBarBackground;
+				color += ( isLoadingBar * loadingBarColor );
+				
+				float spaceColors[] = { 1, 0.8148469, 0.708376, 0.6307572, 0.5271155, 0.4507858, 0.3915725, 0.3049874 };
+				bool spaceEnabled[] = { _Space1Selected, _Space2Selected, _Space3Selected, _Space4Selected, _Space5Selected, _Space6Selected, _Space7Selected, _Space8Selected };
+				
+				for (int j = 0; j < 8; j++) 
+				{
+					float isSelected = isColorClose(i.vertexColor, float4(spaceColors[j],0,0,1));
+					float4 SpriteColor = lerp( ( SpriteMasked + SpriteUv2 ) , ( SpriteMasked + ( SpriteUv2 * _SelectedColor ) ) , spaceEnabled[j]);
+					color += ( isSelected * SpriteColor );
+				}
+				
+				clip(color.a - _Cutoff);
+				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+				UNITY_APPLY_FOG(i.fogCoord, color);
+				return color;
+			}
+			ENDCG
+		}
 	}
-	Fallback "Diffuse"
 }
