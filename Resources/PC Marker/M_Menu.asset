@@ -43,7 +43,7 @@ MonoBehaviour:
     subMenu: {fileID: 0}
     subParameters: []
     labels: []
-  - name: Behaviors
+  - name: Options
     icon: {fileID: 2800000, guid: a8b2bac8523ba074999c81cb867c4c13, type: 3}
     type: 103
     parameter:
@@ -61,16 +61,6 @@ MonoBehaviour:
     value: 1
     style: 0
     subMenu: {fileID: 11400000, guid: 9a2dadf382135c54884a79615a425e44, type: 2}
-    subParameters: []
-    labels: []
-  - name: 
-    icon: {fileID: 0}
-    type: 102
-    parameter:
-      name: 
-    value: 0
-    style: 0
-    subMenu: {fileID: 0}
     subParameters: []
     labels: []
   - name: <b><color=#FF0000>Clear</color></b>
