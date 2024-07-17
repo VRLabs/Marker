@@ -132,7 +132,7 @@ Shader "VRLabs/Marker/Marker Menu"
 				color += (isColorButton * colorButtonColor );
 				
 				// Slider
-				float4 sliderCompletionColor = i.uv.x > _SliderValue  ? _SliderBackgroundColor : _SliderForegroundColor;
+				float4 sliderCompletionColor = i.uv.x < _SliderValue  ? _SliderBackgroundColor : _SliderForegroundColor;
 				float isSlider = isColorClose(i.vertexColor, float4(0,0,1,1));
 				color += ( ( sliderCompletionColor * isSlider ));
 				
