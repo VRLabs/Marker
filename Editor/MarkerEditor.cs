@@ -7,8 +7,10 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.Animations;
+using VRC.Dynamics;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using VRC.SDK3.Dynamics.Constraint.Components;
 using Vector3 = UnityEngine.Vector3;
 
 namespace VRLabs.Marker
@@ -267,8 +269,8 @@ namespace VRLabs.Marker
 					if (descriptor.transform.Find("Marker/Model") == null) useIndexFinger = true;
 					if ((descriptor.transform.Find("Marker/World/Local") is Transform t) && (t != null))
 					{
-						if ((t.GetComponent<ParentConstraint>() is ParentConstraint p) && (p != null))
-							if ((p.GetSource(6).sourceTransform != null) && (p.GetSource(7).sourceTransform != null))
+						if ((t.GetComponent<VRCParentConstraint>() is VRCParentConstraint p) && (p != null))
+							if ((p.Sources[6].SourceTransform != null) && (p.Sources[7].SourceTransform != null))
 								localSpaceFullBody = 1;
 					}
 				}
@@ -539,7 +541,8 @@ namespace VRLabs.Marker
 
 			// constrain cull object to avatar
 			Transform cull = marker.transform.Find("Cull");
-			cull.GetComponent<ParentConstraint>().SetSource(0, new ConstraintSource { sourceTransform = descriptor.transform, weight = 1f });
+			cull.GetComponent<VRCParentConstraint>().Sources[0] =  new VRCConstraintSource(descriptor.transform, 1f, Vector3.zero,  Vector3.zero);
+			cull.GetComponent<VRCParentConstraint>().RequestFullNativeUpdate();
 
 			if (useIndexFinger) 
 			{ 
@@ -573,24 +576,24 @@ namespace VRLabs.Marker
 
 			HumanBodyBones[] bones = { HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head, HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
 			HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot };
-			ParentConstraint localConstraint = local.GetComponent<ParentConstraint>();
+			VRCParentConstraint localConstraint = local.GetComponent<VRCParentConstraint>();
 
-			localConstraint.SetSource(0, new ConstraintSource { sourceTransform = avatar.transform, weight = 1f });
+			localConstraint.Sources[0] = new VRCConstraintSource(avatar.transform, 1f, Vector3.zero,  Vector3.zero);
 			if (localSpace)
             {
 				for (int i = 0; i < 5; i ++)
                 {
-					localConstraint.SetSource(i+1, new ConstraintSource { sourceTransform = avatar.GetBoneTransform(bones[i]), weight = 0f });
+					localConstraint.Sources[i+1] = new VRCConstraintSource(avatar.GetBoneTransform(bones[i]), 0f, Vector3.zero,  Vector3.zero);
 				}
 				if (localSpaceFullBody == 1)
 				{
 					for (int i = 5; i < 7; i++)
 					{
-						localConstraint.SetSource(i + 1, new ConstraintSource { sourceTransform = avatar.GetBoneTransform(bones[i]), weight = 0f });
+						localConstraint.Sources[i + 1] = new VRCConstraintSource(avatar.GetBoneTransform(bones[i]), 0f, Vector3.zero,  Vector3.zero);
 					}
 				}
 			}
-			
+			localConstraint.RequestFullNativeUpdate();
 			DestroyImmediate(targets.gameObject); // remove the "Targets" container object when finished
 
 			// set anything not adjustable to a medium-ish amount
