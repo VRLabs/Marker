@@ -4,7 +4,8 @@
 
 [![Generic badge](https://img.shields.io/github/downloads/VRLabs/Marker/total?label=Downloads)](https://github.com/VRLabs/Marker/releases/latest)
 [![Generic badge](https://img.shields.io/badge/License-MIT-informational.svg)](https://github.com/VRLabs/Marker/blob/main/LICENSE)
-[![Generic badge](https://img.shields.io/badge/Unity-2019.4.31f1-lightblue.svg)](https://unity3d.com/unity/whats-new/2019.4.31)
+[![Generic badge](https://img.shields.io/badge/Quest-Partial%20Compatible-yellow?logo=Meta)](https://img.shields.io/badge/Quest-Partial%20Compatible-yellow?logo=Meta)
+[![Generic badge](https://img.shields.io/badge/Unity-2022.3.22f1-lightblue?logo=Unity)](https://unity.com/releases/editor/whats-new/2022.3.22)
 [![Generic badge](https://img.shields.io/badge/SDK-AvatarSDK3-lightblue.svg)](https://vrchat.com/home/download)
 
 [![Generic badge](https://img.shields.io/discord/706913824607043605?color=%237289da&label=DISCORD&logo=Discord&style=for-the-badge)](https://discord.vrlabs.dev/)
@@ -16,7 +17,6 @@ A marker for drawing
 ![Marker-Remove](https://github.com/VRLabs/Marker/assets/76777936/a6c657d3-19e1-4e59-950b-bf6d63096fd6)
 
 ### ⬇️ [Download Latest Version](https://github.com/VRLabs/Marker/releases/latest)
-
 
 ### 📦 [Add to VRChat Creator Companion](https://vrlabs.dev/packages?package=dev.vrlabs.marker)
 
@@ -41,6 +41,9 @@ Adjust the MarkerTarget transform by entering playmode with the emulator and ena
 When finished adjusting MarkerTarget, copy its transform component to paste its values outside of playmode.
 
 Click "Finish Setup" to finalize your marker and remove the script from your avatar.
+
+> [!NOTE]  
+> When building for Quest, you will have to remove unsupported components and shaders. The eraser does not work on Quest so drawings need to be cleared through the expression menu.
 
 ## Contributors
 
