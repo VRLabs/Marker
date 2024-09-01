@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using UnityEngine.Animations;
+using VRC.SDK3.Dynamics.Constraint.Components;
 
 namespace VRLabs.Marker
 {
@@ -25,7 +26,7 @@ namespace VRLabs.Marker
 				Transform eraser = system.Find("Eraser");
 				if (markerTarget.lossyScale.x < 1.0f) // don't scale down too much for small avatars, breaks
                 {
-					system.GetComponent<ScaleConstraint>().enabled = false;
+					system.GetComponent<VRCScaleConstraint>().enabled = false;
 					scale.x = 1.0f;
 					if (!eraserSize) // but the eraser *does* need adjustment
                     {
@@ -35,7 +36,7 @@ namespace VRLabs.Marker
                 }
                 else
                 {
-					system.GetComponent<ScaleConstraint>().enabled = true;
+					system.GetComponent<VRCScaleConstraint>().enabled = true;
 					if (!eraserSize)
 					{
 						eraser.localScale = new Vector3(0.05f,0.05f,0.05f);
@@ -58,7 +59,7 @@ namespace VRLabs.Marker
                 {
                     markerModel.GetComponent<MeshRenderer>().enabled = false;  // turn off marker model
                 }
-                DestroyImmediate(system.GetComponent<ScaleConstraint>()); // was used to scale Draw & Eraser
+                DestroyImmediate(system.GetComponent<VRCScaleConstraint>()); // was used to scale Draw & Eraser
                 // end script
             }
         }
