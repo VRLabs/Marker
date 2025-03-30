@@ -27,6 +27,25 @@ namespace VRLabs.Marker
         const string M_MARKER_CLEAR_PARAM = "VRLabs/Marker/Clear";
         const string M_NORMALIZED_PARAM_NAME = "VRLabs/Marker/_Normalize";
 
+        enum MainMenuItems
+        {
+            MarkerToggle = 0,
+            Eraser = 1,
+            MenuToggle = 2,
+            Options = 3,
+            LocalSpace = 4,
+            Clear = 5,
+        }
+
+        enum OptionsMenu
+        {
+            Color = 0,
+            BrushAndEraserSize = 1,
+            LeftHand = 2,
+        }
+
+
+
         public static void Generate(VRCAvatarDescriptor descriptor, ref Marker marker, bool installQuest)
         {
             // Ensure we aren't installing more than once
@@ -77,7 +96,6 @@ namespace VRLabs.Marker
                     }
                 }
             }
-
 
             // Generate and apply master Avatar Mask
             if (marker.generateMasterMask)
@@ -279,14 +297,6 @@ namespace VRLabs.Marker
             Transform markerScale = targets.Find("MarkerScale");
             Transform local = markerPrefab.transform.Find("World").Find("Local");
 
-            // constrain cull object to avatar
-            Transform cull = markerPrefab.transform.Find("Cull");
-            cull.GetComponent<ParentConstraint>().SetSource(0, new ConstraintSource
-            {
-                sourceTransform = descriptor.transform,
-                weight = 1f
-            });
-
             if (marker.useIndexFinger)
             {
                 GameObject.DestroyImmediate(targets.Find("Marker Flip").gameObject);// markerTargetLeft.GetChild(0).gameObject); // destroy Flip
@@ -346,31 +356,65 @@ namespace VRLabs.Marker
                 HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftFoot,
                 HumanBodyBones.RightFoot
             };
-            ParentConstraint localConstraint = local.GetComponent<ParentConstraint>();
+            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint localConstraint = new VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint()
+            {
+                Sources = new VRC.Dynamics.VRCConstraintSourceKeyableList()
+                {
+                    new VRC.Dynamics.VRCConstraintSource()
+                    {
+                        SourceTransform = avatar.transform, Weight = 1f
+                    }
+                }
+            };
 
-            localConstraint.SetSource(0, new ConstraintSource { sourceTransform = avatar.transform, weight = 1f });
             if (marker.localSpace)
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    localConstraint.SetSource(i + 1, new ConstraintSource
+                    localConstraint.Sources[i+1] = new VRC.Dynamics.VRCConstraintSource()
                     {
-                        sourceTransform = avatar.GetBoneTransform(bones[i]),
-                        weight = 0f
-                    });
+                        SourceTransform = avatar.GetBoneTransform(bones[i]),
+                        Weight = 0f
+                    };
                 }
                 if (marker.localSpaceFullBody == 1)
                 {
                     for (int i = 5; i < 7; i++)
                     {
-                        localConstraint.SetSource(i + 1, new ConstraintSource
+                        localConstraint.Sources[i+1] = new VRC.Dynamics.VRCConstraintSource()
                         {
-                            sourceTransform = avatar.GetBoneTransform(bones[i]),
-                            weight = 0f
-                        });
+                            SourceTransform = avatar.GetBoneTransform(bones[i]),
+                            Weight = 0f
+                        };
                     }
                 }
             }
+
+            //ParentConstraint localConstraint = local.GetComponent<ParentConstraint>();
+
+            //localConstraint.SetSource(0, new ConstraintSource { sourceTransform = avatar.transform, weight = 1f });
+            //if (marker.localSpace)
+            //{
+            //    for (int i = 0; i < 5; i++)
+            //    {
+            //        localConstraint.SetSource(i + 1, new ConstraintSource
+            //        {
+            //            sourceTransform = avatar.GetBoneTransform(bones[i]),
+            //            weight = 0f
+            //        });
+            //    }
+            //    if (marker.localSpaceFullBody == 1)
+            //    {
+            //        for (int i = 5; i < 7; i++)
+            //        {
+            //            localConstraint.SetSource(i + 1, new ConstraintSource
+            //            {
+            //                sourceTransform = avatar.GetBoneTransform(bones[i]),
+            //                weight = 0f
+            //            });
+            //        }
+            //    }
+            //}
 
             //GameObject.DestroyImmediate(targets.gameObject); // remove the "Targets" container object when finished
 
@@ -473,9 +517,26 @@ namespace VRLabs.Marker
                 ScriptFunctions.AddParameter(descriptor, p_eraserSize, $"{directory}/");
             }
 
+            // We still have this in the menu,
+            // if none of the above options are selected
+            if (!marker.brushSize && !marker.eraserSize)
+            {
+                VRCExpressionParameters.Parameter p_size = new VRCExpressionParameters.Parameter
+                { name = "VRLabs/Marker/Size", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
+                ScriptFunctions.AddParameter(descriptor, p_size, $"{directory}/");
+            }
+
             VRCExpressionParameters.Parameter p_menu = new VRCExpressionParameters.Parameter
             { name = "VRLabs/Marker/Menu", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
             ScriptFunctions.AddParameter(descriptor, p_menu, $"{directory}/");
+
+            VRCExpressionParameters.Parameter p_menuEnable = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/Menu/Enable", valueType = VRCExpressionParameters.ValueType.Bool, saved = true };
+            ScriptFunctions.AddParameter(descriptor, p_menuEnable, $"{directory}/");
+
+            VRCExpressionParameters.Parameter p_leftHand = new VRCExpressionParameters.Parameter
+            { name = "VRLabs/Marker/LeftHand", valueType = VRCExpressionParameters.ValueType.Bool, saved = true };
+            ScriptFunctions.AddParameter(descriptor, p_leftHand, $"{directory}/");
 
             // handle menu instancing
             AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu.asset", $"{directory}/Marker Menu.asset");
@@ -487,9 +548,10 @@ namespace VRLabs.Marker
             {
                 VRCExpressionsMenu.Control.Parameter pm_spaceSimple = new VRCExpressionsMenu.Control.Parameter
                 { name = "VRLabs/Marker/SpaceSimple" };
-                markerMenu.controls[6].type = VRCExpressionsMenu.Control.ControlType.Toggle;
-                markerMenu.controls[6].parameter = pm_spaceSimple;
-                markerMenu.controls[6].subMenu = null; // or else the submenu is still there internally, SDK complains
+
+                markerMenu.controls[(int)MainMenuItems.LocalSpace].type = VRCExpressionsMenu.Control.ControlType.Toggle;
+                markerMenu.controls[(int)MainMenuItems.LocalSpace].parameter = pm_spaceSimple;
+                markerMenu.controls[(int)MainMenuItems.LocalSpace].subMenu = null; // or else the submenu is still there internally, SDK complains
             }
             else
             {
@@ -499,14 +561,7 @@ namespace VRLabs.Marker
                     submenuPath, typeof(VRCExpressionsMenu)
                 ) as VRCExpressionsMenu;
 
-                /*
-                if (marker.localSpaceFullBody == 0) // remove left and right foot controls
-                {
-                    subMenu.controls.RemoveAt(7);
-                    subMenu.controls.RemoveAt(6);
-                }
-                */
-                markerMenu.controls[6].subMenu = subMenu;
+                markerMenu.controls[(int)MainMenuItems.LocalSpace].subMenu = subMenu;
                 EditorUtility.SetDirty(subMenu);
             }
 

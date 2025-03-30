@@ -111,8 +111,10 @@ namespace VRLabs.Marker
             {
                 markerModel.GetComponent<MeshRenderer>().enabled = false;  // turn off marker model
             }
-            DestroyImmediate(system.GetComponent<ScaleConstraint>()); // was used to scale Draw & Eraser
-                                                                      // end script
+            if (system != null)
+            {
+                DestroyImmediate(system.GetComponent<ScaleConstraint>()); // was used to scale Draw & Eraser
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0
 #if UNITY_EDITOR
-using GluonGui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +7,6 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.Animations;
-using UnityEngine.Timeline;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using Vector3 = UnityEngine.Vector3;
@@ -33,10 +31,11 @@ namespace VRLabs.Marker
 
         bool isWdAutoSet;
         int memoryAvailable;
+        private static HashSet<int> initializedMarker = new HashSet<int>();
 
         // movement
         GameObject markerTargetObject, lastMarkerTargetObject, markerScale;
-        bool adjustInLocalSpace, mirrorPosition;
+        bool adjustInLocalSpace, mirrorPosition, mirrorRotation;
 
         // styles
         GUIStyle boxStyle, titleStyle, buttonStyle;
@@ -57,13 +56,20 @@ namespace VRLabs.Marker
 
         Texture2D platformIcon;
 
+        string PreviewAnimatorPath = "Assets/VRLabs/Marker/Resources/Shared/Gesture Preview.controller";
+        RuntimeAnimatorController originalController;
+
         private void OnEnable()
         {
             mirrorPosition = true;
+            mirrorRotation = true;
             ((Marker)target).isQuest = isQuest = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
             platformIcon = Resources.Load<Texture2D>(isQuest ? $"{R_ICON_DIR}/Meta" : $"{R_ICON_DIR}/Windows");
             marker = target as Marker;
             splash = Resources.Load<Texture2D>("Media/BG");
+
+            descriptor = FindDescriptor(marker.transform);
+            StopAnimationPreview();
         }
 
         public void Reset()
@@ -71,7 +77,7 @@ namespace VRLabs.Marker
             if (marker == null)
                 return;
 
-            descriptor = marker.gameObject.GetComponent<VRCAvatarDescriptor>();
+            descriptor = FindDescriptor(marker.transform);
 
             wdSetting = marker.wdSetting;
             brushSize = marker.brushSize;
@@ -132,6 +138,35 @@ namespace VRLabs.Marker
                         marker.markerTargetLeft.transform.position = pos;
                     }
                 }
+
+                // Rotation mirroring
+                UnityEngine.Object[] undoObjectsRot = new UnityEngine.Object[mirrorRotation ? 3 : 1];
+                undoObjectsRot[0] = ((Marker)target).markerScale.transform;
+                if(mirrorRotation) {
+                    undoObjectsRot[1] = marker.markerTargetLeft.transform;
+                    undoObjectsRot[2] = marker.markerTargetRight.transform;
+                }
+
+                Undo.RecordObjects(undoObjectsRot, "Rotate Marker");
+
+                if(mirrorRotation)
+                {
+                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject)) {
+                        marker.markerTargetLeft.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y *= -1;
+                        mirroredEuler.z *= -1;
+                        marker.markerTargetRight.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    } else {
+                        marker.markerTargetRight.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y *= -1;
+                        mirroredEuler.z *= -1;
+                        marker.markerTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                }
             }
         }
 
@@ -149,6 +184,63 @@ namespace VRLabs.Marker
             buttonStyle = new GUIStyle(GUI.skin.button) { 
                 fontStyle = FontStyle.Bold 
             };
+        }
+
+        public VRCAvatarDescriptor FindDescriptor(Transform startTransform)
+        {
+            Transform current = startTransform;
+
+            while (current != null)
+            {
+                VRCAvatarDescriptor component = current.GetComponent<VRCAvatarDescriptor>();
+
+                if (component != null)
+                {
+                    return component;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
+        }
+
+        public AnimatorController FindAnimatorController(Transform startTransform)
+        {
+            Transform current = startTransform;
+
+            while (current != null)
+            {
+                AnimatorController component = current.GetComponent<AnimatorController>();
+
+                if (component != null)
+                {
+                    return component;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
+        }
+
+        public Animator FindAnimator(Transform startTransform)
+        {
+            Transform current = startTransform;
+
+            while (current != null)
+            {
+                Animator component = current.GetComponent<Animator>();
+
+                if (component != null)
+                {
+                    return component;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
         }
 
         public override void OnInspectorGUI()
@@ -203,7 +295,7 @@ namespace VRLabs.Marker
                 );
 
                 // only scan for avatar errors when the descriptor field has been modified
-                if (EditorGUI.EndChangeCheck() && descriptor != null) {
+                if (descriptor != null && EditorGUI.EndChangeCheck()) {
                     ScanAvatar();
                     gestureToDraw = 3;
                 }
@@ -356,6 +448,18 @@ namespace VRLabs.Marker
                     );
                 }
 
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    mirrorRotation = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Mirror Rotation", "Rotate both marker targets simultaneously"),
+                        mirrorRotation,
+                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
+                    );
+                }
+
+                Animator animator = FindAnimator(marker.transform);
+                RuntimeAnimatorController originalController = animator.runtimeAnimatorController;
+
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button(new GUIContent("Adjust Right Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
                     "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
@@ -366,16 +470,27 @@ namespace VRLabs.Marker
                     }
                     else
                     {
+                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                        source1.Weight = 0f;
+                        constraint.Sources[1] = source1;
+                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                        source2.Weight = 1f;
+                        constraint.Sources[0] = source2;
+
                         //Selection.activeGameObject = ((Marker)target).markerTargetRight.gameObject;
-                        ParentConstraint constraint = marker.system.GetComponentInParent<ParentConstraint>();
-                        ConstraintSource source1 = constraint.GetSource(1);
-                        source1.weight = 0;
-                        constraint.SetSource(1, source1);
-                        ConstraintSource source2 = constraint.GetSource(0);
-                        source2.weight = 1;
-                        constraint.SetSource(0, source2);
+                        //ParentConstraint constraint = marker.system.GetComponentInParent<ParentConstraint>();
+                        //ConstraintSource source1 = constraint.GetSource(1);
+                        //source1.weight = 0;
+                        //constraint.SetSource(1, source1);
+                        //ConstraintSource source2 = constraint.GetSource(0);
+                        //source2.weight = 1;
+                        //constraint.SetSource(0, source2);
 
                         markerTargetObject = marker.markerTargetRight.gameObject;
+                        marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                        StartAnimationPreview();
+                        Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                     }
                 }
 
@@ -388,16 +503,27 @@ namespace VRLabs.Marker
                     }
                     else
                     {
+                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                        source1.Weight = 1f;
+                        constraint.Sources[1] = source1;
+                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                        source2.Weight = 0f;
+                        constraint.Sources[0] = source2;
+
                         //Selection.activeGameObject = ((Marker)target).markerTargetLeft.gameObject;
-                        ParentConstraint constraint = marker.system.GetComponentInParent<ParentConstraint>();
-                        ConstraintSource source1 = constraint.GetSource(1);
-                        source1.weight = 1;
-                        constraint.SetSource(1, source1);
-                        ConstraintSource source2 = constraint.GetSource(0);
-                        source2.weight = 0;
-                        constraint.SetSource(0, source2);
+                        //ParentConstraint constraint = marker.system.GetComponentInParent<ParentConstraint>();
+                        //ConstraintSource source1 = constraint.GetSource(1);
+                        //source1.weight = 1;
+                        //constraint.SetSource(1, source1);
+                        //ConstraintSource source2 = constraint.GetSource(0);
+                        //source2.weight = 0;
+                        //constraint.SetSource(0, source2);
 
                         markerTargetObject = marker.markerTargetLeft.gameObject;
+                        marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                        StartAnimationPreview();
+                        Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                     }
                 }
                 EditorGUILayout.EndHorizontal();
@@ -414,6 +540,9 @@ namespace VRLabs.Marker
 
                 if (EditorApplication.isPlaying)
                 {
+                    AnimationMode.StopAnimationMode();
+                    StopAnimationPreview();
+
                     GUI.enabled = false;
                     GUILayout.Button("Finish Setup", buttonStyle);
                     GUI.enabled = true;
@@ -422,7 +551,9 @@ namespace VRLabs.Marker
                 {
                     if (GUILayout.Button("Finish Setup", buttonStyle))
                     {
-                        marker.system.transform.Find("Model").GetComponent<MeshRenderer>().enabled = false;
+                        marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        StopAnimationPreview();
+
                         DestroyImmediate(((Marker)target));
                         DestroyImmediate(this);
                         // end script
@@ -441,6 +572,36 @@ namespace VRLabs.Marker
             marker.generateMasterMask = generateMasterMask;
 
             GUI.enabled = true;
+        }
+
+        private void StartAnimationPreview()
+        {
+            AnimatorController previewController = AssetDatabase.LoadAssetAtPath<AnimatorController>(PreviewAnimatorPath);
+            if (previewController == null)
+            {
+                Debug.Log("Preview Controller not found");
+                return;
+            }
+
+            Animator animator = FindAnimator(marker.transform);
+
+            if (originalController == null && animator.runtimeAnimatorController != previewController)
+                originalController = animator.runtimeAnimatorController;
+
+            animator.runtimeAnimatorController = previewController;
+
+            AnimationMode.StartAnimationMode();
+            AnimationMode.BeginSampling();
+            AnimationMode.SampleAnimationClip(animator.gameObject, previewController.animationClips.ElementAt(0), 0f);
+            AnimationMode.EndSampling();
+        }
+
+        private void StopAnimationPreview()
+        {
+            AnimationMode.StopAnimationMode();
+
+            Animator animator = FindAnimator(marker.transform);
+            animator.runtimeAnimatorController = originalController;
         }
 
         void GenerateMarker()
@@ -539,9 +700,13 @@ namespace VRLabs.Marker
                     if (descriptor.transform.Find("Marker/Model") == null) useIndexFinger = true;
                     if ((descriptor.transform.Find("Marker/World/Local") is Transform t) && (t != null))
                     {
-                        if ((t.GetComponent<ParentConstraint>() is ParentConstraint p) && (p != null))
-                            if ((p.GetSource(6).sourceTransform != null) && (p.GetSource(7).sourceTransform != null))
+                        if ((t.GetComponent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>() is VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint p) && (p != null))
+                            if ((p.Sources[6].SourceTransform != null) && (p.Sources[7].SourceTransform != null))
                                 localSpaceFullBody = 1;
+
+                        //if ((t.GetComponent<ParentConstraint>() is ParentConstraint p) && (p != null))
+                        //    if ((p.GetSource(6).sourceTransform != null) && (p.GetSource(7).sourceTransform != null))
+                        //        localSpaceFullBody = 1;
                     }
                 }
             }
