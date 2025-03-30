@@ -592,6 +592,12 @@ namespace VRLabs.Marker
 
         private static void ChangeGestureCondition(AnimatorController controller, int layerToModify, int newGesture)
         {   // helper function: change gesture condition, in all transitions of 1 layer of controller
+            if (controller == null)
+            {
+                Debug.LogError("Couldn't change gesture conditions. controller was null.");
+                return;
+            }
+
             AnimatorStateTransition[] transitions = controller.layers[layerToModify]
                 .stateMachine.states.SelectMany(x => x.state.transitions).ToArray();
 

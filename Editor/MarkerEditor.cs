@@ -551,7 +551,10 @@ namespace VRLabs.Marker
                 {
                     if (GUILayout.Button("Finish Setup", buttonStyle))
                     {
-                        marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        if (marker.markerModel != null)
+                        {
+                            marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        }
                         StopAnimationPreview();
 
                         DestroyImmediate(((Marker)target));
