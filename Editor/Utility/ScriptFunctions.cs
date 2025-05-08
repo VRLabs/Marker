@@ -183,7 +183,7 @@ namespace VRLabs.Marker
             {
                 string path = AssetDatabase.GenerateUniqueAssetPath((directory + descriptor.expressionsMenu.name + ".asset"));
                 AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(descriptor.expressionsMenu), path);
-                topMenu = AssetDatabase.LoadAssetAtPath(path, typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
+                topMenu = AssetDatabase.LoadAssetAtPath<VRCExpressionsMenu>(path);
                 descriptor.expressionsMenu = topMenu;
             }
 
@@ -221,7 +221,7 @@ namespace VRLabs.Marker
             }
             else if (layer < 4) // fx layer has no default layer
             {
-                if ((AssetDatabase.LoadAssetAtPath(_defaultLayerPath[layer], typeof(AnimatorController)) as AnimatorController) == null)
+                if (AssetDatabase.LoadAssetAtPath<AnimatorController>(_defaultLayerPath[layer]) == null)
                 {
                     Debug.LogError("Couldn't find VRChat's default animator controller at path '" + _defaultLayerPath[layer] + "'! Merging was not performed.");
                     return;

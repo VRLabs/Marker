@@ -10,6 +10,9 @@ using UnityEditor.Animations;
 
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using VRC.SDK3.Dynamics.Constraint.Components;
+using VRC.SDK3.Dynamics.Contact.Components;
+using Object = UnityEngine.Object;
 
 namespace VRLabs.Marker
 {
@@ -163,13 +166,13 @@ namespace VRLabs.Marker
         static AnimatorController GeneratePCAnimatorFX(VRCAvatarDescriptor descriptor, Marker marker, string directory)
         {
             // Install layers, parameters, and menu before prefab setup
-            string controllerName = marker.useIndexFinger ? "M_FX (Finger).controller" : "M_FX.controller";
-            string tempFXPath = $"{directory}/FXTemp.controller";
-            AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/{controllerName}", tempFXPath);
+            string controllerPath = $"{A_PC_MARKER_DIR}/M_FX.controller";
 
-            AnimatorController FX = AssetDatabase.LoadAssetAtPath(
-                tempFXPath, typeof(AnimatorController)
-            ) as AnimatorController;
+            if (AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath) == null) controllerPath = AssetDatabase.GUIDToAssetPath("9c6cad7ffe746f34ea8ef04275d774bb");
+            string tempFXPath = $"{directory}/FXTemp.controller";
+            AssetDatabase.CopyAsset(controllerPath, tempFXPath);
+
+            AnimatorController FX = AssetDatabase.LoadAssetAtPath<AnimatorController>(tempFXPath);
 
             // determine local space layers
             // set WD
@@ -210,23 +213,28 @@ namespace VRLabs.Marker
         static AnimatorController GeneratePCAnimatorGesture(VRCAvatarDescriptor descriptor, Marker marker, string directory)
         {
             // Gesture layer
+            string animatorControllerPath =
+                AssetDatabase.LoadAssetAtPath<AnimatorController>($"{A_PC_MARKER_DIR}/M_Gesture.controller") != null
+                    ? $"{A_PC_MARKER_DIR}/M_Gesture.controller"
+                    : AssetDatabase.GUIDToAssetPath("2a28c48a730ccc34981997ad9bee2d27");
+            
             AssetDatabase.CopyAsset(
-                $"{A_PC_MARKER_DIR}/M_Gesture.controller",
+                animatorControllerPath,
                 $"{directory}/gestureTemp.controller");
-            AnimatorController gesture = AssetDatabase.LoadAssetAtPath(
-                $"{directory}/gestureTemp.controller",
-                typeof(AnimatorController)
-            ) as AnimatorController;
+            AnimatorController gesture = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{directory}/gestureTemp.controller");
 
             if (descriptor.baseAnimationLayers[2].isDefault == true
                 || descriptor.baseAnimationLayers[2].animatorController == null)
             {
+                string originalControllerPath =
+                    AssetDatabase.LoadAssetAtPath<AnimatorController>(
+                        $"{A_SHARED_RESOURCES_DIR}/Default/M_DefaultGesture.controller") != null
+                        ? $"{A_SHARED_RESOURCES_DIR}/Default/M_DefaultGesture.controller"
+                        : AssetDatabase.GUIDToAssetPath("a472e02366708f243a73214dfbdec21f"); 
                 AssetDatabase.CopyAsset(
-                    $"{A_SHARED_RESOURCES_DIR}/Default/M_DefaultGesture.controller",
+                    originalControllerPath,
                     $"{directory}/Gesture.controller");
-                AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(
-                    $"{directory}/Gesture.controller", typeof(AnimatorController)
-                ) as AnimatorController;
+                AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{directory}/Gesture.controller");
 
                 descriptor.customExpressions = true;
                 descriptor.baseAnimationLayers[2].isDefault = false;
@@ -246,17 +254,23 @@ namespace VRLabs.Marker
                 {
                     if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture")
                     {
-                        gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(
-                            $"{A_PC_MARKER_DIR}/Animations/Gesture/M_Gesture (Finger).anim",
-                            typeof(AnimationClip)
-                        ) as AnimationClip;
+                        AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                            $"{A_PC_MARKER_DIR}/Animations/Gesture/M_Gesture (Finger).anim"
+                        );
+
+                        if (clip == null)
+                            clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                                AssetDatabase.GUIDToAssetPath("b73dd4e43f9541e43b982693a6418cbf"));
+                        gesture.layers[0].stateMachine.states[i].state.motion = clip;
                     }
                     else if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture Draw")
                     {
-                        gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(
-                            $"{A_PC_MARKER_DIR}/Animations/Gesture/M_Gesture Draw (Finger).anim",
-                            typeof(AnimationClip)
-                        ) as AnimationClip;
+                        AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                            $"{A_PC_MARKER_DIR}/Animations/Gesture/M_Gesture Draw (Finger).anim"
+                        );
+                        if (clip == null)
+                            clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath("07183dd5f59a9dd4d83a352b5aafbf6b"));
+                        gesture.layers[0].stateMachine.states[i].state.motion = clip;
                     }
                 }
             }
@@ -281,10 +295,10 @@ namespace VRLabs.Marker
             Animator avatar = descriptor.GetComponent<Animator>();
 
             // Physical Setup
-            GameObject markerPrefab = PrefabUtility.InstantiatePrefab(
-                AssetDatabase.LoadAssetAtPath($"{A_PC_MARKER_DIR}/Marker.prefab", typeof(GameObject))
-            ) as GameObject;
-
+            GameObject markerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{A_PC_MARKER_DIR}/Marker.prefab");
+            if (markerPrefab == null) markerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath("a91e0ccd554763b428192a6bbadba397"));
+            markerPrefab = PrefabUtility.InstantiatePrefab(markerPrefab) as GameObject;
+            
             if (PrefabUtility.IsPartOfPrefabInstance(markerPrefab))
                 PrefabUtility.UnpackPrefabInstance(markerPrefab, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 
@@ -317,6 +331,8 @@ namespace VRLabs.Marker
                     markerTargetRight.SetParent(indexDistalRight, true);
                 markerTargetRight.localPosition = Vector3.zero;
                 markerTargetRight.localRotation = Quaternion.Euler(0f, 0f, 0f);
+                
+                Object.DestroyImmediate(markerModel.GetComponent<VRCContactSender>());
             }
             else // using model: scale Model to target freely, and until script is destroyed, scale System to target uniformly with X-axis 
             {
@@ -356,17 +372,16 @@ namespace VRLabs.Marker
                 HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftFoot,
                 HumanBodyBones.RightFoot
             };
-            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint localConstraint = new VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint()
+            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint localConstraint = markerPrefab.AddComponent<VRCParentConstraint>();
+
+            localConstraint.Sources = new VRC.Dynamics.VRCConstraintSourceKeyableList()
             {
-                Sources = new VRC.Dynamics.VRCConstraintSourceKeyableList()
+                new VRC.Dynamics.VRCConstraintSource()
                 {
-                    new VRC.Dynamics.VRCConstraintSource()
-                    {
-                        SourceTransform = avatar.transform, Weight = 1f
-                    }
+                    SourceTransform = avatar.transform, Weight = 1f
                 }
             };
-
+            
             if (marker.localSpace)
             {
                 for (int i = 0; i < 5; i++)
@@ -427,7 +442,7 @@ namespace VRLabs.Marker
 
                 SphereCollider collider = markerModel.GetComponent<SphereCollider>();
                 collider.radius = 0.018f;
-                collider.center = new Vector3(collider.center.x, 0.196f, collider.center.z);
+                collider.center = new Vector3(collider.center.x, marker.useIndexFinger ? 0f : 0.196f, collider.center.z);
 
                 //eraser.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
             }
@@ -539,10 +554,12 @@ namespace VRLabs.Marker
             ScriptFunctions.AddParameter(descriptor, p_leftHand, $"{directory}/");
 
             // handle menu instancing
-            AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu.asset", $"{directory}/Marker Menu.asset");
-            VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(
-                $"{directory}/Marker Menu.asset", typeof(VRCExpressionsMenu)
-            ) as VRCExpressionsMenu;
+            string markerMenuPath =
+                AssetDatabase.LoadAssetAtPath<VRCExpressionsMenu>($"{A_PC_MARKER_DIR}/M_Menu.asset") != null
+                    ? $"{A_PC_MARKER_DIR}/M_Menu.asset"
+                    : AssetDatabase.GUIDToAssetPath("ffb2ec12140d2bc43a5954032d31040c");
+            AssetDatabase.CopyAsset(markerMenuPath, $"{directory}/Marker Menu.asset");
+            VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath<VRCExpressionsMenu>($"{directory}/Marker Menu.asset");
 
             if (!marker.localSpace) // change from submenu to 1 toggle
             {
@@ -555,8 +572,8 @@ namespace VRLabs.Marker
             }
             else
             {
-                string submenuPath = $"{directory}/Marker Space Submenu.asset";
-                AssetDatabase.CopyAsset($"{A_PC_MARKER_DIR}/M_Menu Space.asset", submenuPath);
+                string submenuPath = AssetDatabase.LoadAssetAtPath<VRCExpressionsMenu>($"{A_PC_MARKER_DIR}/M_Menu Space.asset") != null ? $"{A_PC_MARKER_DIR}/M_Menu Space.asset"  : AssetDatabase.GUIDToAssetPath("9a2dadf382135c54884a79615a425e44");
+                AssetDatabase.CopyAsset(submenuPath, $"{directory}/Marker Space Submenu.asset");
                 VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(
                     submenuPath, typeof(VRCExpressionsMenu)
                 ) as VRCExpressionsMenu;
