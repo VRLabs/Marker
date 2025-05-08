@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: -340790334, guid: 67cc4cb7839cd3741b63733d5adf0442, type: 3}
   m_Name: M_Menu Space
   m_EditorClassIdentifier: 
+  Parameters: {fileID: 0}
   controls:
   - name: <color=#FFFFFF>Avatar
     icon: {fileID: 2800000, guid: 32d3ac95f31119842a7b431ac607c91b, type: 3}
