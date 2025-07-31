@@ -12,12 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: -340790334, guid: 67cc4cb7839cd3741b63733d5adf0442, type: 3}
   m_Name: M_Menu
   m_EditorClassIdentifier: 
+  Parameters: {fileID: 0}
   controls:
   - name: <b><color=#FFFFFF>Marker
     icon: {fileID: 2800000, guid: 3fbf0dd0286008143ab4bacc99e8ad62, type: 3}
     type: 102
     parameter:
-      name: VRLabs/Marker/Marker
+      name: VRLabs/Marker/Enable
     value: 1
     style: 0
     subMenu: {fileID: 0}

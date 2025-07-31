@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Mat PC Eraser
+  m_Name: M_Mat PC Eraser Index
   m_Shader: {fileID: 4800000, guid: 2bd1ac25615aa5049b180d78a1b9a7c8, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -83,7 +83,7 @@ Material:
     - _DistortionStrengthScaled: 0
     - _DstBlend: 1
     - _EmissionEnabled: 1
-    - _EraserSize: 0.8419998
+    - _EraserSize: 0
     - _FlipbookMode: 0
     - _GlossMapScale: 1
     - _Glossiness: 0

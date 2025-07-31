@@ -127,15 +127,30 @@ namespace VRLabs.Marker
                 markerTargetObject.transform.rotation = rot;
                 ((Marker)target).markerScale.transform.localScale = new Vector3(scale.x, scale.y, scale.z);
 
-                if(mirrorPosition) {
-                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject)) {
+                if (mirrorPosition) {
+                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject))
+                    {
                         marker.markerTargetLeft.transform.position = pos;
                         pos.x *= -1;
                         marker.markerTargetRight.transform.position = pos;
-                    } else {
+                    }
+                    else if (markerTargetObject.Equals(marker.markerTargetRight.gameObject))
+                    {
                         marker.markerTargetRight.transform.position = pos;
                         pos.x *= -1;
                         marker.markerTargetLeft.transform.position = pos;
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetLeft.gameObject))
+                    {
+                        marker.menuTargetLeft.transform.position = pos;
+                        pos.x *= -1;
+                        marker.menuTargetRight.transform.position = pos;
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetRight.gameObject))
+                    {
+                        marker.menuTargetRight.transform.position = pos;
+                        pos.x *= -1;
+                        marker.menuTargetLeft.transform.position = pos;
                     }
                 }
 
@@ -149,22 +164,43 @@ namespace VRLabs.Marker
 
                 Undo.RecordObjects(undoObjectsRot, "Rotate Marker");
 
-                if(mirrorRotation)
+                if (mirrorRotation)
                 {
-                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject)) {
+                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject))
+                    {
                         marker.markerTargetLeft.transform.rotation = rot;
 
                         Vector3 mirroredEuler = rot.eulerAngles;
                         mirroredEuler.y *= -1;
                         mirroredEuler.z *= -1;
                         marker.markerTargetRight.transform.rotation = Quaternion.Euler(mirroredEuler);
-                    } else {
+                    }
+                    else if (markerTargetObject.Equals(marker.markerTargetRight.gameObject))
+                    {
                         marker.markerTargetRight.transform.rotation = rot;
 
                         Vector3 mirroredEuler = rot.eulerAngles;
                         mirroredEuler.y *= -1;
                         mirroredEuler.z *= -1;
                         marker.markerTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetLeft.gameObject))
+                    {
+                        marker.menuTargetLeft.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y *= -1;
+                        mirroredEuler.z *= -1;
+                        marker.menuTargetRight.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetRight.gameObject))
+                    {
+                        marker.menuTargetRight.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y *= -1;
+                        mirroredEuler.z *= -1;
+                        marker.menuTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
                     }
                 }
             }
@@ -406,7 +442,8 @@ namespace VRLabs.Marker
                 }
             }
             // Once script is run
-            else if(!marker.isQuest) 
+            //else if(!marker.isQuest)
+            else
             {
                 GUILayout.Space(8);
 
@@ -415,88 +452,195 @@ namespace VRLabs.Marker
                     marker.showGizmos
                 );
 
-                using (new EditorGUILayout.HorizontalScope())
+                if (!marker.isQuest)
                 {
-                    mirrorPosition = EditorGUILayout.ToggleLeft(
-                        new GUIContent("Mirror Position", "Move both marker target positions simultaneously"),
-                        mirrorPosition, 
-                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
-                    );
-                }
+                    // Mirroring is not available on Quest, as the marker is directly on the hand
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        mirrorPosition = EditorGUILayout.ToggleLeft(
+                            new GUIContent("Mirror Position", "Move both marker target positions simultaneously"),
+                            mirrorPosition,
+                            GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
+                        );
+                    }
 
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    mirrorRotation = EditorGUILayout.ToggleLeft(
-                        new GUIContent("Mirror Rotation", "Rotate both marker targets simultaneously"),
-                        mirrorRotation,
-                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
-                    );
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        mirrorRotation = EditorGUILayout.ToggleLeft(
+                            new GUIContent("Mirror Rotation", "Rotate both marker targets simultaneously"),
+                            mirrorRotation,
+                            GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
+                        );
+                    }
+
+                    EditorGUILayout.Space(10);
                 }
 
                 Animator animator = FindAnimator(marker.transform);
 
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button(new GUIContent("Adjust Right Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
-                    "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                if (!marker.isQuest)
                 {
-                    if (((Marker)target).markerTargetRight.gameObject == null)
-                    {
-                        Debug.LogError("Can't find MarkerTarget! It may have been moved or deleted.");
-                    }
-                    else
-                    {
-                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
-                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
-                        source1.Weight = 0f;
-                        constraint.Sources[1] = source1;
-                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
-                        source2.Weight = 1f;
-                        constraint.Sources[0] = source2;
+                    GUIStyle centeredBoldLabel = new GUIStyle(EditorStyles.label);
+                    centeredBoldLabel.fontSize = 16;
+                    centeredBoldLabel.alignment = TextAnchor.MiddleCenter;
+                    centeredBoldLabel.fontStyle = FontStyle.Bold;
 
-                        markerTargetObject = marker.markerTargetRight.gameObject;
-                        if (marker.markerModel != null)
+                    EditorGUILayout.LabelField("Marker", centeredBoldLabel);
+                    EditorGUILayout.Space(5);
+
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button(new GUIContent("Adjust Right Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
+                        "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                    {
+                        if (((Marker)target).markerTargetRight.gameObject == null)
                         {
-                            marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                            Debug.LogError("Can't find MarkerTarget! It may have been moved or deleted.");
                         }
-                        StartAnimationPreview();
-                        Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
+                        else
+                        {
+                            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                            source1.Weight = 0f;
+                            constraint.Sources[1] = source1;
+                            VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                            source2.Weight = 1f;
+                            constraint.Sources[0] = source2;
+
+                            markerTargetObject = marker.markerTargetRight.gameObject;
+                            if (marker.markerModel != null)
+                            {
+                                marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                            }
+                            StartAnimationPreview();
+                            Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
+                        }
+                    }
+
+                    if (GUILayout.Button(new GUIContent("Adjust Left Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
+                        "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                    {
+                        if (((Marker)target).markerTargetLeft.gameObject == null)
+                        {
+                            Debug.LogError("Can't find MarkerTarget! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                            source1.Weight = 1f;
+                            constraint.Sources[1] = source1;
+                            VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                            source2.Weight = 0f;
+                            constraint.Sources[0] = source2;
+
+                            markerTargetObject = marker.markerTargetLeft.gameObject;
+                            if (marker.markerModel != null)
+                            {
+                                marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                            }
+                            StartAnimationPreview();
+                            Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
+                        }
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+                else
+                {
+                    if (GUILayout.Button(new GUIContent("Adjust Marker Position", "If needed, move, rotate or scale the Marker so it lines up with your finger"), GUILayout.Height(35)))
+                    {
+                        GameObject markerObject = GetQuestMarkerObject();
+
+                        if (markerObject == null)
+                        {
+                            Debug.LogError("Can't find Marker! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            mirrorPosition = false;
+                            mirrorRotation = false;
+                            markerTargetObject = markerObject;
+                            ((Marker)target).markerScale = markerObject.transform;
+                            StartAnimationPreview();
+                        }
                     }
                 }
 
-                if (GUILayout.Button(new GUIContent("Adjust Left Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
-                    "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                if (GUILayout.Button("Reset Marker Target"))
                 {
-                    if (((Marker)target).markerTargetLeft.gameObject == null)
+                    if (!marker.isQuest)
                     {
-                        Debug.LogError("Can't find MarkerTarget! It may have been moved or deleted.");
+                        marker.markerTargetLeft.transform.localPosition = Vector3.zero;
+                        marker.markerTargetLeft.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        marker.markerTargetRight.transform.localPosition = Vector3.zero;
+                        marker.markerTargetRight.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        ((Marker)target).markerScale.localScale = Vector3.one;
                     }
                     else
                     {
-                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
-                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
-                        source1.Weight = 1f;
-                        constraint.Sources[1] = source1;
-                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
-                        source2.Weight = 0f;
-                        constraint.Sources[0] = source2;
+                        GameObject markerObject = GetQuestMarkerObject();
 
-                        markerTargetObject = marker.markerTargetLeft.gameObject;
-                        if (marker.markerModel != null)
+                        if (markerObject == null)
                         {
-                            marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                            Debug.LogError("Can't find Marker! It may have been moved or deleted.");
                         }
+                        else
+                        {
+                            markerTargetObject = markerObject;
+                            markerTargetObject.transform.localPosition = Vector3.zero;
+                            markerTargetObject.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        }
+                    }
+                }
+
+                if (!marker.isQuest)
+                {
+                    GUILayout.Space(40);
+
+                    GUIStyle centeredBoldLabel = new GUIStyle(EditorStyles.label);
+                    centeredBoldLabel.fontSize = 16;
+                    centeredBoldLabel.alignment = TextAnchor.MiddleCenter;
+                    centeredBoldLabel.fontStyle = FontStyle.Bold;
+
+                    EditorGUILayout.LabelField("Menu", centeredBoldLabel);
+                    GUILayout.Space(5);
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button(new GUIContent("Adjust Right Menu Target", "If needed, move, rotate or scale MenuTarget"), GUILayout.Height(35)))
+                    {
+                        markerTargetObject = marker.menuTargetRight.gameObject;
+
+                        if (marker.menu != null)
+                        {
+                            marker.menu.gameObject.SetActive(true);
+                        }
+
                         StartAnimationPreview();
                         Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                     }
-                }
-                EditorGUILayout.EndHorizontal();
 
-                if(GUILayout.Button("Reset Marker Target")) {
-                    marker.markerTargetLeft.transform.localPosition = Vector3.zero;
-                    marker.markerTargetLeft.transform.localRotation = Quaternion.Euler(180, 0,0);
-                    marker.markerTargetRight.transform.localPosition = Vector3.zero;
-                    marker.markerTargetRight.transform.localRotation = Quaternion.Euler(180,0,0);
-                    ((Marker)target).markerScale.localScale = Vector3.one;
+                    if (GUILayout.Button(new GUIContent("Adjust Left Menu Target", "If needed, move, rotate or scale MenuTarget"), GUILayout.Height(35)))
+                    {
+                        markerTargetObject = marker.menuTargetLeft.gameObject;
+
+                        if (marker.menu != null)
+                        {
+                            marker.menu.gameObject.SetActive(true);
+                        }
+
+                        StartAnimationPreview();
+                        Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    if (GUILayout.Button("Reset Menu Target"))
+                    {
+                        marker.menuTargetLeft.transform.localPosition = Vector3.zero;
+                        marker.menuTargetLeft.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        marker.menuTargetRight.transform.localPosition = Vector3.zero;
+                        marker.menuTargetRight.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        marker.menu.parent.localScale = Vector3.one;
+                    }
+
+                    GUILayout.Space(30);
                 }
 
                 GUILayout.Space(8);
@@ -518,6 +662,40 @@ namespace VRLabs.Marker
                         {
                             marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
                         }
+
+                        if (marker.menu != null)
+                        {
+                            marker.menu.gameObject.SetActive(false);
+                        }
+
+                        if (marker.isQuest)
+                        {
+                            GameObject markerObject = GetQuestMarkerObject();
+
+                            if (markerObject != null)
+                            {
+                                Transform model = markerObject.transform.Find("Marker");
+
+                                if (model != null)
+                                {
+                                    if (model.GetComponent<MeshRenderer>() != null)
+                                    {
+                                        model.GetComponent<MeshRenderer>().enabled = false;
+                                    }
+                                }
+
+                                Transform trailRenderer = markerObject.transform.Find("Draw");
+
+                                if (trailRenderer != null)
+                                {
+                                    if (trailRenderer.GetComponent<TrailRenderer>() != null)
+                                    {
+                                        trailRenderer.GetComponent<TrailRenderer>().time = 0;
+                                    }
+                                }
+                            }
+                        }
+
                         StopAnimationPreview();
 
                         DestroyImmediate(((Marker)target));
@@ -537,6 +715,24 @@ namespace VRLabs.Marker
             marker.generateMasterMask = generateMasterMask;
 
             GUI.enabled = true;
+        }
+
+        private GameObject GetQuestMarkerObject()
+        {
+            Animator avatar = descriptor.gameObject.GetComponent<Animator>();
+
+            GameObject markerObject = null;
+
+            if (avatar.GetBoneTransform(HumanBodyBones.LeftHand).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.LeftHand).Find("Marker").gameObject;
+            else if (avatar.GetBoneTransform(HumanBodyBones.RightHand).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.RightHand).Find("Marker").gameObject;
+            else if (avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal).Find("Marker").gameObject;
+            else if (avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal).Find("Marker").gameObject;
+
+            return markerObject;
         }
 
         private void StartAnimationPreview()

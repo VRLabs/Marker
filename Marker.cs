@@ -15,7 +15,7 @@ namespace VRLabs.Marker
         public int localSpaceFullBody = 1;
         public int gestureToDraw = 3;
 
-        public Transform markerTargetLeft, markerTargetRight, markerModel, system, markerScale;
+        public Transform markerTargetLeft, markerTargetRight, menuTargetLeft, menuTargetRight, markerModel, menu, system, markerScale;
         public bool finished = false;
         public bool showGizmos = true;
 
@@ -110,6 +110,10 @@ namespace VRLabs.Marker
             if (markerModel != null)
             {
                 markerModel.GetComponent<MeshRenderer>().enabled = false;  // turn off marker model
+            }
+            if (menu != null)
+            {
+                menu.gameObject.SetActive(false); // turn off menu
             }
             if (system != null)
             {

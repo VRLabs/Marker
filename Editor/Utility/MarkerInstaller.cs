@@ -19,8 +19,9 @@ namespace VRLabs.Marker
     public static class MarkerInstaller
     {
         const string A_PC_MARKER_DIR = "Assets/VRLabs/Marker/Resources/PC Marker";
+        const string A_QUEST_MARKER_DIR = "Assets/VRLabs/Marker/Resources/Quest Marker";
         const string A_GENERATED_ASSETS_DIR = "Assets/VRLabs/GeneratedAssets/Marker";
-        const string A_SHARED_RESOURCES_DIR = "Assets/VRLabs/Marker/Resources/Shared/Default";
+        const string A_SHARED_RESOURCES_DIR = "Assets/VRLabs/Marker/Resources/Shared";
         const string R_QUEST_MARKER_PATH = "Quest Marker/Marker";
         const float KSIVL_UNIT = 0.4156029f;
 
@@ -140,22 +141,34 @@ namespace VRLabs.Marker
                         HumanBodyBones.LeftHand, 
                         HumanBodyBones.RightHand,
                         HumanBodyBones.LeftIndexDistal, 
-                        HumanBodyBones.RightIndexDistal 
+                        HumanBodyBones.RightIndexDistal,
+                        HumanBodyBones.LeftLowerArm,
+                        HumanBodyBones.RightLowerArm
                     };
 
                     for (int i = 0; i < bonesToSearch.Length; i++)
                     {
-                        GameObject foundTargetPCLeft = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTargetLeft", true);
+                        // Marker Targets
+                        GameObject foundTargetPCLeft = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTargetLeft", searchAllChildren: true);
                         if (foundTargetPCLeft != null)
                             GameObject.DestroyImmediate(foundTargetPCLeft);
 
-                        GameObject foundTargetPCRight = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTargetRight", true);
+                        GameObject foundTargetPCRight = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTargetRight", searchAllChildren: true);
                         if (foundTargetPCRight != null)
                             GameObject.DestroyImmediate(foundTargetPCRight);
 
                         GameObject foundTargetQuest = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "Marker", true);
                         if (foundTargetQuest != null)
                             GameObject.DestroyImmediate(foundTargetQuest);
+
+                        // Menu targets
+                        GameObject foundMenuTargetPCLeft = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MenuTargetLeft", searchAllChildren: true);
+                        if (foundMenuTargetPCLeft != null)
+                            GameObject.DestroyImmediate (foundMenuTargetPCLeft);
+
+                        GameObject foundMenuTargetPCRight = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MenuTargetRight", searchAllChildren: true);
+                        if (foundMenuTargetPCRight != null)
+                            GameObject.DestroyImmediate(foundMenuTargetPCRight);
                     }
                 }
             }
@@ -307,9 +320,12 @@ namespace VRLabs.Marker
             Transform targets = markerPrefab.transform.Find("Targets");
             Transform markerTargetLeft = targets.Find("MarkerTargetLeft");
             Transform markerTargetRight = targets.Find("MarkerTargetRight");
+            Transform menuTargetLeft = targets.Find("MenuTargetLeft");
+            Transform menuTargetRight = targets.Find("MenuTargetRight");
             Transform markerModel = system.Find("Model");
             Transform markerScale = targets.Find("MarkerScale");
-            Transform local = markerPrefab.transform.Find("World").Find("Local");
+            Transform menuContainer = markerPrefab.transform.Find("Menu");
+            Transform menu = (menuContainer == null) ? null : menuContainer.Find("Marker Menu");
 
             if (marker.useIndexFinger)
             {
@@ -319,18 +335,57 @@ namespace VRLabs.Marker
 
                 // prefer the end bone of the index finger if it exists
                 if (indexDistalLeft.Find(indexDistalLeft.gameObject.name + "_end") != null)
-                    markerTargetLeft.SetParent(indexDistalLeft.Find(indexDistalLeft.gameObject.name + "_end"), true);
+                    markerTargetLeft.SetParent(indexDistalLeft.Find(indexDistalLeft.gameObject.name + "_end"), worldPositionStays: true);
                 else
-                    markerTargetLeft.SetParent(indexDistalLeft, true);
+                    markerTargetLeft.SetParent(indexDistalLeft, worldPositionStays: true);
                 markerTargetLeft.localPosition = Vector3.zero;
                 markerTargetLeft.localRotation = Quaternion.Euler(0f, 0f, 0f);
 
                 if (indexDistalRight.Find(indexDistalRight.gameObject.name + "_end") != null)
-                    markerTargetRight.SetParent(indexDistalRight.Find(indexDistalRight.gameObject.name + "_end"), true);
+                    markerTargetRight.SetParent(indexDistalRight.Find(indexDistalRight.gameObject.name + "_end"), worldPositionStays: true);
                 else
-                    markerTargetRight.SetParent(indexDistalRight, true);
+                    markerTargetRight.SetParent(indexDistalRight, worldPositionStays: true);
                 markerTargetRight.localPosition = Vector3.zero;
                 markerTargetRight.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+                SphereCollider originalEraserCollider = markerModel.GetComponent<SphereCollider>();
+
+                if (originalEraserCollider != null)
+                {
+                    GameObject FinalEraser = new GameObject("Eraser");
+                    SphereCollider newEraser = FinalEraser.AddComponent<SphereCollider>();
+                    newEraser.radius = originalEraserCollider.radius;
+                    newEraser.enabled = false;
+
+                    GameObject EraserRenderer = new GameObject("EraserRenderer");
+                    EraserRenderer.transform.localScale = new Vector3(newEraser.radius * 2, newEraser.radius * 2, newEraser.radius * 2);
+                    EraserRenderer.transform.SetParent(FinalEraser.transform, false);
+
+                    // Add a Mesh Filter with a Unity Sphere
+                    MeshFilter EraserMeshFilter = EraserRenderer.AddComponent<MeshFilter>();
+                    GameObject tempSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    Mesh sphereMesh = tempSphere.GetComponent<MeshFilter>().sharedMesh;
+                    EraserMeshFilter.sharedMesh = sphereMesh;
+                    Object.DestroyImmediate(tempSphere);
+
+                    // Add the material to the Mesh Renderer
+                    MeshRenderer EraserMeshRenderer = EraserRenderer.AddComponent<MeshRenderer>();
+                    string IndexEraserMaterialGuid = "6659f7fd2b84db74ab6b3bd32b060786"; // M_Mat PC Eraser Index
+                    string IndexEraserMaterialPath = AssetDatabase.GUIDToAssetPath(IndexEraserMaterialGuid);
+
+                    if (IndexEraserMaterialPath != null)
+                    {
+                        Material IndexEraserMaterialMaterial = AssetDatabase.LoadAssetAtPath<Material>(IndexEraserMaterialPath);
+
+                        if (IndexEraserMaterialMaterial != null)
+                        {
+                            EraserMeshRenderer.material = IndexEraserMaterialMaterial;
+                        }
+                    }
+
+                    EraserMeshRenderer.enabled = false;
+                    FinalEraser.transform.SetParent(system, false);
+                }
                 
                 Object.DestroyImmediate(markerModel.GetComponent<VRCContactSender>());
             }
@@ -366,6 +421,18 @@ namespace VRLabs.Marker
 
                 marker.markerModel = markerModel; // to turn its mesh renderer off when script is finished
             }
+
+            // We install the menu both for pen and index finger modes
+            Transform lowerArmLeft = avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm);
+            Transform lowerArmRight = avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
+
+            menuTargetLeft.SetParent(lowerArmLeft, worldPositionStays: true);
+            menuTargetLeft.localPosition = Vector3.zero;
+            menuTargetLeft.localRotation = Quaternion.Euler(0f, 0f, 0f);
+
+            menuTargetRight.SetParent(lowerArmRight, worldPositionStays: true);
+            menuTargetRight.localPosition = Vector3.zero;
+            menuTargetRight.localRotation = Quaternion.Euler(0f, 0f, 0f);
 
             HumanBodyBones[] bones = {
                 HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head,
@@ -468,9 +535,18 @@ namespace VRLabs.Marker
             markerTargetLeft.localScale = new Vector3(newScale, newScale, newScale);
 
             marker.system = system;
-            marker.markerTargetRight = markerTargetRight;
             marker.markerTargetLeft = markerTargetLeft;
+            marker.markerTargetRight = markerTargetRight;
             marker.markerScale = markerScale;
+            marker.menuTargetLeft = markerTargetLeft;
+            marker.menuTargetRight = markerTargetRight;
+            marker.menu = menu;
+
+            // We are not using the pen
+            if (marker.useIndexFinger)
+            {
+                Object.DestroyImmediate(markerModel.gameObject);
+            }
         }
 
         public static Dictionary<ScriptFunctions.PlayableLayer, AnimatorController> GeneratePC(VRCAvatarDescriptor descriptor, ref Marker marker, string directory)
@@ -490,6 +566,7 @@ namespace VRLabs.Marker
                 );
             }
 
+            #region Parameters
             // Parameters
             VRCExpressionParameters.Parameter
             p_marker = new VRCExpressionParameters.Parameter
@@ -504,7 +581,9 @@ namespace VRLabs.Marker
             ScriptFunctions.AddParameter(descriptor, p_eraser, $"{directory}/");
             ScriptFunctions.AddParameter(descriptor, p_clear, $"{directory}/");
             ScriptFunctions.AddParameter(descriptor, p_color, $"{directory}/");
+            #endregion Parameters
 
+            #region Menus
             // Menus
             if (marker.localSpace)
             {
@@ -603,6 +682,7 @@ namespace VRLabs.Marker
                 typeof(Texture2D)
             ) as Texture2D;
             ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", $"{directory}/", pm_menu, markerIcon);
+            #endregion Menus
 
             return controllers;
         }
@@ -679,8 +759,8 @@ namespace VRLabs.Marker
                 directory
             );
 
-
-            // parameters
+            #region Parameters
+            // Parameters
             VRCExpressionParameters.Parameter
             p_marker = new VRCExpressionParameters.Parameter
             { name = M_MARKER_PARAM, valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
@@ -691,9 +771,27 @@ namespace VRLabs.Marker
             ScriptFunctions.AddParameter(descriptor, p_marker, directory);
             ScriptFunctions.AddParameter(descriptor, p_clear, directory);
             ScriptFunctions.AddParameter(descriptor, p_color, directory);
+            #endregion Parameters
 
-            // menus
+            #region Menus
+            // Menus
+            // handle menu instancing
+            string markerMenuPath =
+                AssetDatabase.LoadAssetAtPath<VRCExpressionsMenu>($"{A_QUEST_MARKER_DIR}/M_Menu.asset") != null
+                    ? $"{A_QUEST_MARKER_DIR}/M_Menu.asset"
+                    : AssetDatabase.GUIDToAssetPath("9a8aad38a5126744c994e73f7b2aa8b1");
+            AssetDatabase.CopyAsset(markerMenuPath, $"{directory}/Marker Menu.asset");
+            VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath<VRCExpressionsMenu>($"{directory}/Marker Menu.asset");
 
+            EditorUtility.SetDirty(markerMenu);
+
+            VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter();
+            Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(
+                $"{A_SHARED_RESOURCES_DIR}/Icons/M_Icon_Menu.png",
+                typeof(Texture2D)
+            ) as Texture2D;
+            ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", $"{directory}/", pm_menu, markerIcon);
+            #endregion Menus
 
             return new Dictionary<ScriptFunctions.PlayableLayer, AnimatorController>() {
                 { ScriptFunctions.PlayableLayer.FX, penController }
