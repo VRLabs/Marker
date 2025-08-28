@@ -200,10 +200,10 @@ namespace VRLabs.Marker
             // init mask and set dirty for editing
             AvatarMask mask = new AvatarMask();
             EditorUtility.SetDirty(mask);
-
+            
             // get all transform hierarchy paths on the avatar
             List<string> allTransformPaths = descriptor.transform.GetComponentsInChildren<Transform>(true)
-                .Select(t => t.GetHierarchyPath(descriptor.transform))
+                .Select(t => VRC.Core.ExtensionMethods.GetHierarchyPath(t, descriptor.transform))
                 .ToList();
 
             // create a dictionary that we will be using to reference the index of the masked transform

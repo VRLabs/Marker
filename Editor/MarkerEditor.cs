@@ -155,11 +155,13 @@ namespace VRLabs.Marker
                 }
 
                 // Rotation mirroring
-                UnityEngine.Object[] undoObjectsRot = new UnityEngine.Object[mirrorRotation ? 3 : 1];
+                UnityEngine.Object[] undoObjectsRot = new UnityEngine.Object[mirrorRotation ? 5 : 1];
                 undoObjectsRot[0] = ((Marker)target).markerScale.transform;
                 if(mirrorRotation) {
                     undoObjectsRot[1] = marker.markerTargetLeft.transform;
                     undoObjectsRot[2] = marker.markerTargetRight.transform;
+                    undoObjectsRot[3] = marker.menuTargetLeft.transform;
+                    undoObjectsRot[4] = marker.menuTargetRight.transform;
                 }
 
                 Undo.RecordObjects(undoObjectsRot, "Rotate Marker");
@@ -180,7 +182,7 @@ namespace VRLabs.Marker
                         marker.markerTargetRight.transform.rotation = rot;
 
                         Vector3 mirroredEuler = rot.eulerAngles;
-                        mirroredEuler.y *= -1;
+                        mirroredEuler.y *= -1 + 180;
                         mirroredEuler.z *= -1;
                         marker.markerTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
                     }
@@ -190,7 +192,7 @@ namespace VRLabs.Marker
 
                         Vector3 mirroredEuler = rot.eulerAngles;
                         mirroredEuler.y *= -1;
-                        mirroredEuler.z *= -1;
+                        mirroredEuler.z = (mirroredEuler.z * -1f) + 180;
                         marker.menuTargetRight.transform.rotation = Quaternion.Euler(mirroredEuler);
                     }
                     else if (markerTargetObject.Equals(marker.menuTargetRight.gameObject))
@@ -199,7 +201,7 @@ namespace VRLabs.Marker
 
                         Vector3 mirroredEuler = rot.eulerAngles;
                         mirroredEuler.y *= -1;
-                        mirroredEuler.z *= -1;
+                        mirroredEuler.z = (mirroredEuler.z * -1f) + 180;
                         marker.menuTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
                     }
                 }
@@ -511,8 +513,14 @@ namespace VRLabs.Marker
                             {
                                 marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
                             }
+                            if (marker.menu != null)
+                            {
+                                marker.menu.gameObject.SetActive(false);
+                            }
+
+                            marker.gizmosMenu = false;
+                            
                             StartAnimationPreview();
-                            Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                         }
                     }
 
@@ -538,8 +546,14 @@ namespace VRLabs.Marker
                             {
                                 marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
                             }
+                            if (marker.menu != null)
+                            {
+                                marker.menu.gameObject.SetActive(false);
+                            }
+                            
+                            marker.gizmosMenu = false;
+                            
                             StartAnimationPreview();
-                            Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                         }
                     }
                     EditorGUILayout.EndHorizontal();
@@ -608,35 +622,61 @@ namespace VRLabs.Marker
                     {
                         markerTargetObject = marker.menuTargetRight.gameObject;
 
+                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.menu.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[0];
+                        source1.Weight = 1f;
+                        constraint.Sources[0] = source1;
+                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[1];
+                        source2.Weight = 0f;
+                        constraint.Sources[1] = source2;
+                        
                         if (marker.menu != null)
                         {
                             marker.menu.gameObject.SetActive(true);
                         }
+                        if (marker.markerModel != null)
+                        {
+                            marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        }
+                        
+                        marker.gizmosMenu = true;
 
                         StartAnimationPreview();
-                        Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                     }
 
                     if (GUILayout.Button(new GUIContent("Adjust Left Menu Target", "If needed, move, rotate or scale MenuTarget"), GUILayout.Height(35)))
                     {
                         markerTargetObject = marker.menuTargetLeft.gameObject;
 
+                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.menu.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[0];
+                        source1.Weight = 0f;
+                        constraint.Sources[0] = source1;
+                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[1];
+                        source2.Weight = 1f;
+                        constraint.Sources[1] = source2;
+                        
                         if (marker.menu != null)
                         {
                             marker.menu.gameObject.SetActive(true);
                         }
+                        if (marker.markerModel != null)
+                        {
+                            marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        }
+
+                        marker.gizmosMenu = true;
 
                         StartAnimationPreview();
-                        Debug.Log(marker + " " + marker.finished + " " + markerTargetObject.name);
                     }
                     EditorGUILayout.EndHorizontal();
 
                     if (GUILayout.Button("Reset Menu Target"))
                     {
                         marker.menuTargetLeft.transform.localPosition = Vector3.zero;
-                        marker.menuTargetLeft.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        marker.menuTargetLeft.transform.localRotation = Quaternion.Euler(270, 180, 0);
                         marker.menuTargetRight.transform.localPosition = Vector3.zero;
-                        marker.menuTargetRight.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                        marker.menuTargetRight.transform.localRotation = Quaternion.Euler(270, 0, 0);
                         marker.menu.parent.localScale = Vector3.one;
                     }
 
@@ -747,6 +787,7 @@ namespace VRLabs.Marker
 
             Animator animator = FindAnimator(marker.transform);
 
+            if (animator == null) animator = descriptor.gameObject.GetComponent<Animator>();
             if (originalController == null && animator.runtimeAnimatorController != previewController)
                 originalController = animator.runtimeAnimatorController;
 
@@ -763,7 +804,7 @@ namespace VRLabs.Marker
             AnimationMode.StopAnimationMode();
 
             Animator animator = FindAnimator(marker.transform);
-            animator.runtimeAnimatorController = originalController;
+            if (animator) animator.runtimeAnimatorController = originalController;
         }
 
         void GenerateMarker()

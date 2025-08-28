@@ -428,11 +428,11 @@ namespace VRLabs.Marker
 
             menuTargetLeft.SetParent(lowerArmLeft, worldPositionStays: true);
             menuTargetLeft.localPosition = Vector3.zero;
-            menuTargetLeft.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            menuTargetLeft.localRotation = Quaternion.Euler(270f, 0f, 0f);
 
             menuTargetRight.SetParent(lowerArmRight, worldPositionStays: true);
             menuTargetRight.localPosition = Vector3.zero;
-            menuTargetRight.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            menuTargetRight.localRotation = Quaternion.Euler(270f, 180f, 0f);
 
             HumanBodyBones[] bones = {
                 HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head,
@@ -538,8 +538,8 @@ namespace VRLabs.Marker
             marker.markerTargetLeft = markerTargetLeft;
             marker.markerTargetRight = markerTargetRight;
             marker.markerScale = markerScale;
-            marker.menuTargetLeft = markerTargetLeft;
-            marker.menuTargetRight = markerTargetRight;
+            marker.menuTargetLeft = menuTargetLeft;
+            marker.menuTargetRight = menuTargetRight;
             marker.menu = menu;
 
             // We are not using the pen
@@ -754,7 +754,7 @@ namespace VRLabs.Marker
 
             // create new pen animator
             AnimatorController penController = GenerateQuestPenAnimator(
-                markerPrefab.transform.GetHierarchyPath(descriptor.transform),
+                VRC.Core.ExtensionMethods.GetHierarchyPath(markerPrefab.transform, descriptor.transform),
                 marker,
                 directory
             );
