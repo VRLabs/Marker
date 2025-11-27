@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -542,8 +543,10 @@ namespace VRLabs.Marker
 			// constrain cull object to avatar
 			Transform cull = marker.transform.Find("Cull");
 			cull.GetComponent<VRCParentConstraint>().Sources[0] =  new VRCConstraintSource(descriptor.transform, 1f, Vector3.zero,  Vector3.zero);
-			cull.GetComponent<VRCParentConstraint>().RequestFullNativeUpdate();
-
+			Type constraintType = typeof(VRC.Dynamics.VRCConstraintBase);
+			MethodInfo method = constraintType.GetMethod("RequestFullNativeUpdate", 
+				BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			method.Invoke(cull.GetComponent<VRCParentConstraint>(), new object[0]);
 			if (useIndexFinger) 
 			{ 
 				DestroyImmediate(markerTarget.GetChild(0).gameObject); // destroy Flip
@@ -593,7 +596,9 @@ namespace VRLabs.Marker
 					}
 				}
 			}
-			localConstraint.RequestFullNativeUpdate();
+			
+			method.Invoke(localConstraint, new object[0]);
+			
 			DestroyImmediate(targets.gameObject); // remove the "Targets" container object when finished
 
 			// set anything not adjustable to a medium-ish amount
