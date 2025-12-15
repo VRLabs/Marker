@@ -76,17 +76,17 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                Debug.LogError("Couldn't add the parameter, the avatar descriptor is null!");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't add the parameter, the avatar descriptor is null!");
                 return;
             }
             else if ((parameter == null) || (parameter.name == null))
             {
-                Debug.LogError("Couldn't add the parameter, it or its name is null!");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't add the parameter, it or its name is null!");
                 return;
             }
             else if ((directory == null) || (directory == ""))
             {
-                Debug.Log("Directory was not specified, storing new parameters asset in " + DEFAULT_DIRECTORY);
+                Debug.Log($"{MarkerStaticResources.MarkerLogTag}Directory was not specified, storing new parameters asset in " + DEFAULT_DIRECTORY);
                 directory = DEFAULT_DIRECTORY;
             }
 
@@ -105,7 +105,7 @@ namespace VRLabs.Marker
             {
                 if ((descriptor.expressionParameters.CalcTotalCost() + VRCExpressionParameters.TypeCost(parameter.valueType)) > VRCExpressionParameters.MAX_PARAMETER_COST)
                 {
-                    Debug.LogError("Couldn't add parameter '" + parameter.name + "', not enough memory free in the avatar's parameter asset!");
+                    Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't add parameter '" + parameter.name + "', not enough memory free in the avatar's parameter asset!");
                     return;
                 }
                 parameters = descriptor.expressionParameters;
@@ -145,17 +145,17 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                Debug.LogError("Couldn't add the menu, the avatar descriptor is null!");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't add the menu, the avatar descriptor is null!");
                 return;
             }
             else if ((menuToAdd == null) || (controlName == null) || (controlName == ""))
             {
-                Debug.LogError("Couldn't add the menu, it or the name of its control is null!");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't add the menu, it or the name of its control is null!");
                 return;
             }
             else if ((directory == null) || (directory == ""))
             {
-                Debug.Log("Directory was not specified, storing new menu in " + DEFAULT_DIRECTORY);
+                Debug.Log($"{MarkerStaticResources.MarkerLogTag}Directory was not specified, storing new menu in " + DEFAULT_DIRECTORY);
                 directory = DEFAULT_DIRECTORY;
             }
 
@@ -173,7 +173,7 @@ namespace VRLabs.Marker
             {
                 if (descriptor.expressionsMenu.controls.Count == 8)
                 {
-                    Debug.LogWarning("Couldn't add menu. Please have an available slot in your avatar's topmost Expression Menu.");
+                    Debug.LogWarning($"{MarkerStaticResources.MarkerLogTag}Couldn't add menu. Please have an available slot in your avatar's topmost Expression Menu.");
                     return;
                 }
                 topMenu = descriptor.expressionsMenu;
@@ -197,6 +197,18 @@ namespace VRLabs.Marker
             AssetDatabase.Refresh();
         }
 
+        public static void CreateController(string directory)
+        {
+            if (string.IsNullOrEmpty(directory))
+            {
+                Debug.Log($"{MarkerStaticResources.MarkerLogTag}Directory was not specified, defaulting to " + DEFAULT_DIRECTORY);
+                directory = DEFAULT_DIRECTORY;
+            }
+
+            AnimatorController controller = new AnimatorController();
+            
+        }
+
         /// <summary>
         /// Merges a controller "on current" to the specified playable layer on an avatar's descriptor and assigns it to the avatar.
         /// If the avatar has no playable layer to begin with, merges to a fresh controller and stores it at the specified directory.
@@ -211,25 +223,25 @@ namespace VRLabs.Marker
             int layer = (int)playable;
             if (descriptor == null)
             {
-                Debug.LogError("The avatar descriptor is null! Merging was not performed.");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The avatar descriptor is null! Merging was not performed.");
                 return;
             }
             else if (controllerToAdd == null)
             {
-                Debug.LogError("The controller to add is null! Merging was not performed.");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The controller to add is null! Merging was not performed.");
                 return;
             }
             else if (layer < 4) // fx layer has no default layer
             {
                 if (AssetDatabase.LoadAssetAtPath<AnimatorController>(_defaultLayerPath[layer]) == null)
                 {
-                    Debug.LogError("Couldn't find VRChat's default animator controller at path '" + _defaultLayerPath[layer] + "'! Merging was not performed.");
+                    Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't find VRChat's default animator controller at path '" + _defaultLayerPath[layer] + "'! Merging was not performed.");
                     return;
                 }
             }
             else if (string.IsNullOrEmpty(directory))
             {
-                Debug.Log("Directory was not specified, defaulting to " + DEFAULT_DIRECTORY);
+                Debug.Log($"{MarkerStaticResources.MarkerLogTag}Directory was not specified, defaulting to " + DEFAULT_DIRECTORY);
                 directory = DEFAULT_DIRECTORY;
             }
 
@@ -265,10 +277,51 @@ namespace VRLabs.Marker
                 AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(descriptor.baseAnimationLayers[layer].animatorController), path);
                 controllerOriginal = AssetDatabase.LoadAssetAtPath(path, typeof(AnimatorController)) as AnimatorController;
             }
+
             AnimatorController mergedController = AnimatorCloner.MergeControllers(controllerOriginal, controllerToAdd, null, false);
             descriptor.baseAnimationLayers[layer].animatorController = mergedController;
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+        }
+
+        /// <summary>
+        /// Merges 2 controllers together
+        /// </summary>
+        /// <param name="controllerBase">The controller we are merging the other controller into</param>
+        /// <param name="controllerToMerge">The controller we are merging into the other controller</param>
+        /// <param name="directory">The unique directory to store the new merged controller, ex. "Assets/MyCoolScript/GeneratedAssets/725638/".</param>
+        /// <param name="makeCopy">If false, overwrite existing asset (if it does not exist, creates one in <c>directory</c>). If true, always make a copy in <c>directory</c>.</param>
+        public static void MergeController(AnimatorController controllerBase, AnimatorController controllerToMerge, string directory, bool makeCopy = false)
+        {
+            if (controllerBase == null)
+            {
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The base controller is null! Merging was not performed.");
+            }
+            else if (controllerToMerge == null)
+            {
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The controller to merge is null! Merging was not performed.");
+            }
+            else if (string.IsNullOrEmpty(directory))
+            {
+                Debug.Log($"{MarkerStaticResources.MarkerLogTag}Directory was not specified, defaulting to " + DEFAULT_DIRECTORY);
+                directory = DEFAULT_DIRECTORY;
+            }
+
+            AnimatorController mergedController = AnimatorCloner.MergeControllers(controllerBase, controllerToMerge, null, false);
+
+            if (makeCopy)
+            {
+                AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(mergedController), directory + "new_" + controllerBase.name);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        public static AnimatorController GetControllerFromGUID(string guid)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            return AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
         }
 
         /// <summary>
@@ -283,12 +336,12 @@ namespace VRLabs.Marker
             int layer = (int)playable;
             if (descriptor == null || descriptor.baseAnimationLayers.Length < 5) // 2nd cond: must have all 5 humanoid layers in descriptor
             {
-                //Debug.LogError("The avatar descriptor is null.");
+                //Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The avatar descriptor is null.");
                 return;
             }
             if (string.IsNullOrEmpty(prefix))
             {
-                Debug.LogError("No string prefix specified.");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}No string prefix specified.");
                 return;
             }
             if (!(descriptor.baseAnimationLayers[layer].animatorController is AnimatorController controllerOriginal) || controllerOriginal == null) return;
@@ -323,7 +376,7 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                //Debug.LogError("The avatar descriptor is null.");
+                //Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The avatar descriptor is null.");
                 return;
             }
             if (descriptor.expressionParameters != null)
@@ -346,7 +399,7 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                //Debug.LogError("The avatar descriptor is null.");
+                //Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The avatar descriptor is null.");
                 return;
             }
             if (descriptor.expressionsMenu != null)
@@ -374,7 +427,7 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                //Debug.LogError("The avatar descriptor is null.");
+                //Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The avatar descriptor is null.");
                 return false;
             }
             if (descriptor.transform.Find(gameObject) != null)
@@ -452,7 +505,7 @@ namespace VRLabs.Marker
         {
             if (descriptor == null)
             {
-                Debug.LogError("The avatar descriptor is null.");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}The avatar descriptor is null.");
                 return null;
             }
             if (descriptor.GetComponent<Animator>() != null)
@@ -482,6 +535,41 @@ namespace VRLabs.Marker
                 }
             }
             return null;
+        }
+
+        public static void RemoveTopLevelBlendTreeFromDirectBlendTree(AnimatorController Controller, string LayerName, string BlendTreeName)
+        {
+            AnimatorControllerLayer DBTLayer = Controller.layers.FirstOrDefault(x => string.Equals(x.name, LayerName, System.StringComparison.Ordinal));
+            int ChildIndex = -1;
+            BlendTree DBT = null;
+
+            if (DBTLayer != null)
+            {
+                IEnumerable<AnimatorState> States = DBTLayer.GetLayerStates();
+
+                for (int i = 0; i < States.Count(); i++)
+                {
+
+                    if (States.ElementAt(i).motion is BlendTree)
+                    {
+                        if (((BlendTree)States.ElementAt(i).motion).blendType == BlendTreeType.Direct)
+                        {
+                            DBT = (BlendTree)States.ElementAt(i).motion;
+                            break;
+                        }
+                    }
+                }
+
+                ChildIndex = System.Array.FindIndex(DBT.children, x => x.motion is BlendTree bt && bt.name == BlendTreeName);
+
+                if (DBT != null)
+                {
+                    if (ChildIndex != -1)
+                    {
+                        DBT.RemoveChild(ChildIndex);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -649,7 +737,7 @@ namespace VRLabs.Marker
         {
             if (controller == null)
             {
-                Debug.LogError("Couldn't set Write Defaults value, the controller is null!");
+                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Couldn't set Write Defaults value, the controller is null!");
                 return;
             }
             for (int i = 0; i < controller.layers.Length; i++)

@@ -12,8 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords:
-  - _SPACE3SELECTED_ON
+  m_InvalidKeywords: []
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -51,7 +50,7 @@ Material:
     - _SliderValue: 0.569
     - _Space1Selected: 0
     - _Space2Selected: 0
-    - _Space3Selected: 1
+    - _Space3Selected: 0
     - _Space4Selected: 0
     - _Space5Selected: 0
     - _Space6Selected: 0

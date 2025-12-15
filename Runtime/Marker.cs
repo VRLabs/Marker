@@ -10,12 +10,13 @@ namespace VRLabs.Marker
     [ExecuteAlways]
     public class Marker : MonoBehaviour
     {   // data storage
-        public bool leftHanded, wdSetting, eraserSize, useIndexFinger;
+        public bool leftHanded, wdSetting, separateEraserScaling, useIndexFinger, withMenu;
         public bool brushSize = true, localSpace = true;
         public int localSpaceFullBody = 1;
         public int gestureToDraw = 3;
+        [HideInInspector] public bool editorDefaultsApplied;
 
-        public Transform markerTargetLeft, markerTargetRight, menuTargetLeft, menuTargetRight, markerModel, menu, system, markerScale;
+        public Transform markerTargetLeft, markerTargetRight, menuTargetLeft, menuTargetRight, markerModel, menu, system, markerScale, menuScale;
         public bool finished = false;
         public bool showGizmos = true;
         public bool gizmosMenu = false;
@@ -70,16 +71,6 @@ namespace VRLabs.Marker
             if (finished && system != null) // constantly uniformly scale Draw and Eraser (System) with MarkerTarget
             {
                 Vector3 scale = system.localScale;
-                //Transform eraser = system.Find("Eraser");
-                /*if (markerTargetRight.lossyScale.x < 1.0f) // don't scale down too much for small avatars, breaks
-                {
-                    system.GetComponent<ScaleConstraint>().enabled = false;
-                    scale.x = 1.0f;
-                }
-                else
-                {
-                    system.GetComponent<ScaleConstraint>().enabled = true;
-                }*/
 
                 scale.y = scale.x;
                 scale.z = scale.x;
@@ -88,20 +79,6 @@ namespace VRLabs.Marker
                 Transform draw = system.Find("Draw");
                 ParticleSystem.TriggerModule triggerModule = draw.GetComponent<ParticleSystem>().trigger;
                 triggerModule.radiusScale = scale.x * 0.6f; // bit more than half is OK
-
-                /*
-                markerTargetLeft.transform.SetPositionAndRotation(
-                    new Vector3(
-                        markerTargetRight.transform.position.x * -1,
-                        markerTargetRight.transform.position.y,
-                        markerTargetRight.transform.position.z
-                    ),
-                    Quaternion.Euler(
-                        markerTargetRight.transform.rotation.eulerAngles.x * -1,
-                        markerTargetRight.transform.rotation.eulerAngles.y * -1,
-                        markerTargetRight.transform.rotation.eulerAngles.z * -1
-                    )
-                );*/
             }
         }
         

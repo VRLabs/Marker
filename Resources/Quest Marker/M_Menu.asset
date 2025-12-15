@@ -35,6 +35,16 @@ MonoBehaviour:
     subParameters:
     - name: VRLabs/Marker/Color
     labels: []
+  - name: <color=#FFFFFF>Left Hand
+    icon: {fileID: 2800000, guid: b4a615d4b1248c9499b06aa6ea7adaf3, type: 3}
+    type: 102
+    parameter:
+      name: VRLabs/Marker/LeftHand
+    value: 1
+    style: 0
+    subMenu: {fileID: 0}
+    subParameters: []
+    labels: []
   - name: <color=#FF0000>Clear
     icon: {fileID: 2800000, guid: f5bf5118da750fc419cfc73052c28045, type: 3}
     type: 101

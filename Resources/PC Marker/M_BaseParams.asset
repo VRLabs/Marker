@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: -1506855854, guid: 67cc4cb7839cd3741b63733d5adf0442, type: 3}
   m_Name: M_BaseParams
   m_EditorClassIdentifier: 
+  isEmpty: 0
   parameters:
   - name: VRLabs/Marker/Enable
     valueType: 2
