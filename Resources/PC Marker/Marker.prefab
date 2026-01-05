@@ -6118,7 +6118,7 @@ GameObject:
   - component: {fileID: 554274800854381918}
   - component: {fileID: 2611547334738290121}
   - component: {fileID: -4053276329161588714}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: Cull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
