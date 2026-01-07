@@ -275,6 +275,7 @@ namespace VRLabs.Marker
             else
             {
                 ScriptFunctions.RemoveTopLevelBlendTreeFromDirectBlendTree(controller, "VRLabs/Marker/BlendTree", "Interactions");
+                ScriptFunctions.RemoveParameter(controller, "VRLabs/Marker/InteractAll");
             }
 
             if (controller) EditorUtility.SetDirty(controller);
