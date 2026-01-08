@@ -1,758 +1,1271 @@
-// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0
+﻿// Marker by ksivl / VRLabs 3.0 Assets https://github.com/VRLabs/VRChat-Avatars-3.0
 #if UNITY_EDITOR
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.Animations;
-using VRC.Dynamics;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
-using VRC.SDK3.Dynamics.Constraint.Components;
 using Vector3 = UnityEngine.Vector3;
 
 namespace VRLabs.Marker
 {
     [CustomEditor(typeof(Marker))]
-	class MarkerEditor : Editor
-	{
-		public VRCAvatarDescriptor descriptor;
-		public Animator avatar;
-		public System.Collections.Generic.List<string> warnings = new System.Collections.Generic.List<string>();
-		public int bitCount;
+    class MarkerEditor : Editor
+    {
+        Marker marker;
 
-		public bool leftHanded, wdSetting, useIndexFinger, brushSize, eraserSize, localSpace;
-		public int localSpaceFullBody, gestureToDraw;
+        public VRCAvatarDescriptor descriptor;
+        public List<string> warnings = new List<string>();
+        public int bitCount;
+        public Animator animator;
 
-		private bool isWdAutoSet;
-		private readonly ScriptFunctions.PlayableLayer[] playablesUsed = { ScriptFunctions.PlayableLayer.Gesture, ScriptFunctions.PlayableLayer.FX };
-		const float KSIVL_UNIT = 0.4156029f;
+        public bool leftHanded, wdSetting, useIndexFinger, brushSize, separateEraserScaling, combinedSize, localSpace, withMenu;
+        public int localSpaceFullBody;
 
-		public void Reset()
-		{
-            if (((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>() != null)
-                descriptor = ((Marker)target).gameObject.GetComponent<VRCAvatarDescriptor>();
+        public bool generateMasterMask;
 
-			leftHanded = ((Marker)target).leftHanded;
-			wdSetting = ((Marker)target).wdSetting;
-			brushSize = ((Marker)target).brushSize;
-			eraserSize = ((Marker)target).eraserSize;
-			localSpace = ((Marker)target).localSpace;
-			localSpaceFullBody = ((Marker)target).localSpaceFullBody;
-			useIndexFinger = ((Marker)target).useIndexFinger;
-			gestureToDraw = ((Marker)target).gestureToDraw;
+        bool isWdAutoSet;
+        int memoryAvailable;
+        private static HashSet<int> initializedMarker = new HashSet<int>();
 
-			SetPreviousInstallSettings();
-		}
+        // movement
+        GameObject markerTargetObject, lastMarkerTargetObject, markerScale, menuScale;
+        bool mirrorPosition, mirrorRotation;
 
-		public override void OnInspectorGUI()
-		{
-			GUIStyle boxStyle = new GUIStyle("box") { stretchWidth = true };
-			boxStyle.normal.textColor = new GUIStyle("label").normal.textColor;
-			GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, richText = true };
-			GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Bold };
+        // styles
+        GUIStyle boxStyle, titleStyle, buttonStyle;
+        Texture2D splash;
 
-			GUILayout.Space(8);
-			EditorGUILayout.BeginHorizontal(boxStyle);
-			EditorGUILayout.LabelField("<b><size=14>Marker 3.0</size></b> <size=12>by ksivl @ VRLabs</size>", titleStyle, GUILayout.MinHeight(20f));
-			EditorGUILayout.EndHorizontal();
+        // private stuff
+        private string[] gestureOptions = new string[] {
+            null, "Fist", "Openhand", "Fingerpoint", "Victory", "Rock'n'Roll", "Handgun", "Thumbs up"
+        };
+        private readonly ScriptFunctions.PlayableLayer[] playablesUsedPC = {
+            ScriptFunctions.PlayableLayer.Gesture, ScriptFunctions.PlayableLayer.FX 
+        };
+        private readonly ScriptFunctions.PlayableLayer[] playablesUsedQuest = { 
+            ScriptFunctions.PlayableLayer.Gesture 
+        };
 
-			if (EditorApplication.isPlaying)
-			{
-				if (((Marker)target).finished == false)
-				{
-					GUILayout.Space(8);
-					EditorGUILayout.LabelField("Please exit Play Mode to use this script.");
-					return;
-				}
-			}
+        const string R_ICON_DIR = "Shared/Icons/Editor Icons";
 
-			if (((Marker)target).finished == false)
-			{
-				GUILayout.Space(8);
+        Texture2D platformIcon;
 
-				descriptor = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("Avatar", descriptor, typeof(VRCAvatarDescriptor), true);
-				if (descriptor != null)
+        RuntimeAnimatorController originalController;
+
+        private void OnEnable()
+        {
+            mirrorPosition = true;
+            mirrorRotation = true;
+            marker = target as Marker;
+            if (marker == null) return;
+
+            var oldDescriptor = descriptor;
+            descriptor = FindDescriptor(marker.transform);
+            if (descriptor != oldDescriptor) ScanAvatar();
+
+            // First time initialization
+            if (!marker.editorDefaultsApplied)
+            {
+                marker.editorDefaultsApplied = true;
+
+                SetPreviousInstallSettings();
+
+                // Default values
+                marker.brushSize = true;
+                marker.localSpace = true;
+                marker.withMenu = true;
+
+                brushSize = true;
+                localSpace = true;
+                withMenu = true;
+
+                EditorUtility.SetDirty(marker);
+            }
+
+            wdSetting = marker.wdSetting;
+            brushSize = marker.brushSize;
+            leftHanded = marker.leftHanded;
+            withMenu = marker.withMenu;
+            separateEraserScaling = marker.separateEraserScaling;
+            localSpace = marker.localSpace;
+            useIndexFinger = marker.useIndexFinger;
+            localSpaceFullBody = marker.localSpaceFullBody;
+            generateMasterMask = marker.generateMasterMask;
+
+            if (marker.markerScale != null)
+                markerScale = marker.markerScale.gameObject;
+
+            if (marker.menuScale != null)
+                menuScale = marker.menuScale.gameObject;
+
+
+            platformIcon = Resources.Load<Texture2D>(marker.isQuest ? $"{R_ICON_DIR}/Meta" : $"{R_ICON_DIR}/Windows");
+            splash = Resources.Load<Texture2D>("Media/BG");
+
+            StopAnimationPreview();
+        }
+
+        public void Reset()
+        {
+            if (marker == null) return;
+
+            descriptor = FindDescriptor(marker.transform);
+            SetPreviousInstallSettings();
+
+            marker.brushSize = true;
+            marker.localSpace = true;
+            marker.withMenu = true;
+
+            marker.editorDefaultsApplied = true;
+
+            wdSetting = marker.wdSetting;
+            brushSize = marker.brushSize;
+            leftHanded = marker.leftHanded;
+            withMenu = marker.withMenu;
+            separateEraserScaling = marker.separateEraserScaling;
+            localSpace = marker.localSpace;
+            useIndexFinger = marker.useIndexFinger;
+            localSpaceFullBody = marker.localSpaceFullBody;
+            generateMasterMask = marker.generateMasterMask;
+
+            if (marker.markerScale != null)
+                markerScale = marker.markerScale.gameObject;
+
+            if (marker.menuScale != null)
+                menuScale = marker.menuScale.gameObject;
+
+            EditorUtility.SetDirty(marker);
+            Repaint();
+        }
+
+        private void OnSceneGUI()
+        {
+            if (marker == null || !marker.finished || markerTargetObject == null)
+                return;
+
+            // re focus camera on change
+            if (lastMarkerTargetObject != markerTargetObject) {
+                SceneView.currentDrawingSceneView.pivot = markerTargetObject.transform.position;
+                lastMarkerTargetObject = markerTargetObject;
+            }
+
+            // pos rot scale
+            Vector3 pos = markerTargetObject.transform.position;
+            Quaternion rot = markerTargetObject.transform.rotation;
+            Vector3 scale;
+            if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject) || markerTargetObject.Equals(marker.markerTargetRight.gameObject))
+            {
+                scale = ((Marker)target).markerScale.transform.localScale;
+            }
+            else
+            {
+                scale = ((Marker)target).menuScale.transform.localScale;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            Handles.TransformHandle(ref pos, ref rot, ref scale);
+            if (EditorGUI.EndChangeCheck())
+            {
+                UnityEngine.Object[] undoObjects = new UnityEngine.Object[mirrorPosition ? 3 : 2];
+
+                bool isMarker = markerTargetObject.Equals(marker.markerTargetLeft.gameObject) ||
+                                markerTargetObject.Equals(marker.markerTargetRight.gameObject);
+
+                if (isMarker)
                 {
-					avatar = descriptor.gameObject.GetComponent<Animator>();
-				}
-				GUILayout.Space(8);
-
-				leftHanded = EditorGUILayout.ToggleLeft("Left-handed", leftHanded);
-				if (isWdAutoSet)
+                    undoObjects[0] = ((Marker)target).markerScale.transform;
+                }
+                else
                 {
-					GUI.enabled = false;
-					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults (auto-detected)", "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
-					GUI.enabled = true;
-				}
-				else
-                {
-					wdSetting = EditorGUILayout.ToggleLeft(new GUIContent("Write Defaults", "Could not auto-detect.\nCheck this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked."), wdSetting);
-				}
-				
+                    undoObjects[0] = ((Marker)target).menuScale.transform;
+                }
 
-				string[] gestureOptions = new string[]
-				{
-				null, "Fist", "Openhand", "Fingerpoint", "Victory", "Rock'n'Roll", "Handgun", "Thumbs up"
-				};
-				gestureToDraw = EditorGUILayout.Popup(new GUIContent("Gesture to draw", "Fingerpoint is recommended. Avoid Rock'n'Roll on Oculus controllers; you'll accidentally draw."), gestureToDraw, gestureOptions);
-
-				GUILayout.Space(8);
-
-				brushSize = EditorGUILayout.ToggleLeft("Adjustable brush size", brushSize);
-				eraserSize = EditorGUILayout.ToggleLeft("Adjustable eraser size", eraserSize);
-				useIndexFinger = EditorGUILayout.ToggleLeft(new GUIContent("Use index finger to draw", "By default, you draw with a shiny pen. Check this to draw with your index finger instead."), useIndexFinger);
-				localSpace = EditorGUILayout.ToggleLeft(new GUIContent("Enable local space", "Check this to be able to attach your drawings to various locations on your body! If unchecked, you can only attach your drawing to your player capsule."), localSpace);
-
-				if (localSpace)
-				{
-					GUIContent[] layoutOptions = { new GUIContent("Half-Body (Hips, Chest, Head, Hands)", "You can attach the drawing to your hips, chest, head, or either hand."), new GUIContent("Full-Body (Half-Body Plus Feet)", "You can also attach the drawing to your feet! (For half-body users, the drawing would follow VRChat's auto-footstep IK)") };
-					GUILayout.BeginVertical("Box");
-					localSpaceFullBody = GUILayout.SelectionGrid(localSpaceFullBody, layoutOptions, 1);
-					GUILayout.EndVertical();
-				}
-
-				GUILayout.Space(8);
-
-				GetBitCount();
-				EditorGUILayout.LabelField("Parameter memory bits needed: " + bitCount);
-				
-				// WD warning - separately handled since installation should still be allowed
-				if (descriptor != null)
-                {
-					var states = descriptor.AnalyzeWDState();
-                    bool isMixed = states.HaveMixedWriteDefaults(out bool isOn);
-
-					if (isMixed)
+                if(mirrorPosition) {
+                    if (isMarker)
                     {
-						GUILayout.Box("Your avatar has mixed Write Defaults settings on its playable layers' states, which can cause issues with animations. The VRChat standard is Write Defaults OFF. It is recommended that Write Defaults for all states should either be all ON or all OFF.", boxStyle);
-					}
+                        undoObjects[1] = marker.markerTargetLeft.transform;
+                        undoObjects[2] = marker.markerTargetRight.transform;
+                    }
                     else
                     {
-						wdSetting = isOn;
-						isWdAutoSet = true;
-					}
+                        undoObjects[1] = marker.menuTargetLeft.transform;
+                        undoObjects[2] = marker.menuTargetRight.transform;
+                    }
+                }
+                else
+                {
+                    undoObjects[1] = markerTargetObject.transform;
+                }
+                Undo.RecordObjects(undoObjects, "Move Marker");
 
-					bool hasEmptyAnimations = states.HaveEmpyMotionsInStates();
+                // set rotation 
+                markerTargetObject.transform.position = pos;
+                markerTargetObject.transform.rotation = rot;
+                
+                if (isMarker)
+                {
+                    ((Marker)target).markerScale.transform.localScale = new Vector3(scale.x, scale.y, scale.z);
+                }
+                else
+                {
+                    ((Marker)target).menuScale.transform.localScale = new Vector3(scale.x, scale.y, scale.z);
+                }
 
-                    if (hasEmptyAnimations)
+                if (mirrorPosition) {
+                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject))
                     {
-                        GUILayout.Box("Some states have no motions, this can be an issue when using WD Off.", boxStyle);
+                        marker.markerTargetLeft.transform.position = pos;
+                        pos.x *= -1;
+                        marker.markerTargetRight.transform.position = pos;
+                    }
+                    else if (markerTargetObject.Equals(marker.markerTargetRight.gameObject))
+                    {
+                        marker.markerTargetRight.transform.position = pos;
+                        pos.x *= -1;
+                        marker.markerTargetLeft.transform.position = pos;
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetLeft.gameObject))
+                    {
+                        marker.menuTargetLeft.transform.position = pos;
+                        pos.x *= -1;
+                        marker.menuTargetRight.transform.position = pos;
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetRight.gameObject))
+                    {
+                        marker.menuTargetRight.transform.position = pos;
+                        pos.x *= -1;
+                        marker.menuTargetLeft.transform.position = pos;
+                    }
+                }
+                
+                // set rotation
+                if (mirrorRotation)
+                {
+                    if (markerTargetObject.Equals(marker.markerTargetLeft.gameObject))
+                    {
+                        marker.markerTargetLeft.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y = (mirroredEuler.y * -1f);
+                        mirroredEuler.z *= -1;
+                        marker.markerTargetRight.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                    else if (markerTargetObject.Equals(marker.markerTargetRight.gameObject))
+                    {
+                        marker.markerTargetRight.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y = (mirroredEuler.y * -1f);
+                        mirroredEuler.z *= -1;
+                        marker.markerTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetLeft.gameObject))
+                    {
+                        marker.menuTargetLeft.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y *= -1;
+                        mirroredEuler.z = (mirroredEuler.z * -1f) + 180;
+                        marker.menuTargetRight.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                    else if (markerTargetObject.Equals(marker.menuTargetRight.gameObject))
+                    {
+                        marker.menuTargetRight.transform.rotation = rot;
+
+                        Vector3 mirroredEuler = rot.eulerAngles;
+                        mirroredEuler.y *= -1;
+                        mirroredEuler.z = (mirroredEuler.z * -1f) + 180;
+                        marker.menuTargetLeft.transform.rotation = Quaternion.Euler(mirroredEuler);
+                    }
+                }
+            }
+        }
+
+        void InitStyles() {
+            boxStyle = new GUIStyle("box") { 
+                stretchWidth = true 
+            };
+            boxStyle.normal.textColor = new GUIStyle("label").normal.textColor;
+
+            titleStyle = new GUIStyle(GUI.skin.label) { 
+                alignment = TextAnchor.MiddleCenter, 
+                richText = true, 
+            };
+
+            buttonStyle = new GUIStyle(GUI.skin.button) { 
+                fontStyle = FontStyle.Bold 
+            };
+        }
+
+        public VRCAvatarDescriptor FindDescriptor(Transform startTransform)
+        {
+            Transform current = startTransform;
+
+            while (current != null)
+            {
+                VRCAvatarDescriptor component = current.GetComponent<VRCAvatarDescriptor>();
+
+                if (component != null)
+                {
+                    return component;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
+        }
+
+        public AnimatorController FindAnimatorController(Transform startTransform)
+        {
+            Transform current = startTransform;
+
+            while (current != null)
+            {
+                AnimatorController component = current.GetComponent<AnimatorController>();
+
+                if (component != null)
+                {
+                    return component;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
+        }
+
+        public Animator FindAnimator(Transform startTransform)
+        {
+            Transform current = startTransform;
+
+            while (current != null)
+            {
+                Animator component = current.GetComponent<Animator>();
+
+                if (component != null)
+                {
+                    return component;
+                }
+
+                current = current.parent;
+            }
+
+            return null;
+        }
+
+        public override void OnInspectorGUI()
+        {
+            if (marker == null) OnEnable();
+
+            // init the styles
+            InitStyles();
+
+            // update bit count
+            GetBitCount();
+
+            // title
+            GUILayout.Space(8);
+
+            //EditorGUI.DrawPreviewTexture(new Rect(0, 0, 1714 / 3f, 959 / 3f), splash);
+            //EditorGUI.DrawPreviewTexture(new Rect(0, 0, 1714 / 3f, 959 / 3f), Texture2D.whiteTexture);
+
+            using (new EditorGUILayout.HorizontalScope(boxStyle))
+            {
+                string label = marker.isQuest
+                    ? "<b><size=14>Quest Marker 3.0</size></b> <size=12>by Cam + VRLabs</size>"
+                    : "<b><size=14>PC Marker 3.0</size></b> <size=12>by Cam + VRLabs</size>";
+
+                EditorGUILayout.LabelField(label, titleStyle, GUILayout.MinHeight(20f));
+            }
+
+            if (Screen.width > (marker.isQuest ? 370 : 340)) {
+                GUI.DrawTexture(new Rect(25, 8, 32, 32), platformIcon);
+                GUI.DrawTexture(new Rect(Screen.width - 45, 8, 32, 32), platformIcon);
+            }
+
+            // user cannot run the script while application playing
+            if (EditorApplication.isPlaying)
+            {
+                if (marker.finished == false)
+                {
+                    GUILayout.Space(8);
+                    EditorGUILayout.LabelField("Please exit Play Mode to use this script.");
+                    return;
+                }
+            }
+
+            if (marker.finished == false)
+            {
+                GUILayout.Space(8);
+
+                EditorGUI.BeginChangeCheck();
+                descriptor = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(
+                    "Avatar",
+                    descriptor,
+                    typeof(VRCAvatarDescriptor),
+                    true
+                );
+
+                // only scan for avatar errors when the descriptor field has been modified
+                if (descriptor != null && EditorGUI.EndChangeCheck()) {
+                    ScanAvatar();
+                    marker.gestureToDraw = 3;
+                }
+
+                GUI.enabled = descriptor != null;
+
+                GUILayout.Space(8);
+                
+                using (new EditorGUI.DisabledGroupScope(isWdAutoSet))
+                {
+                    string subtext = isWdAutoSet ? String.Empty : "Could not auto-detect.\n";
+                    subtext += "Check this if you are animating your avatar with Write Defaults on. Otherwise, leave unchecked.";
+
+                    wdSetting = EditorGUILayout.ToggleLeft(new GUIContent(
+                        "Write Defaults (auto-detected)", subtext
+                    ), wdSetting);
+                }
+
+                marker.gestureToDraw = EditorGUILayout.Popup(new GUIContent(
+                    "Gesture to draw",
+                    "Fingerpoint is recommended. Avoid Rock'n'Roll on Oculus controllers; you'll accidentally draw."),
+                    marker.gestureToDraw,
+                    gestureOptions
+                );
+
+                GUILayout.Space(8);
+
+                var oldQuest = marker.isQuest;
+                marker.isQuest =
+                    EditorGUILayout.ToggleLeft(new GUIContent("Install for Quest",
+                        "Check this to install the Quest version"), marker.isQuest);
+                if (marker.isQuest != oldQuest) platformIcon = Resources.Load<Texture2D>(marker.isQuest ? $"{R_ICON_DIR}/Meta" : $"{R_ICON_DIR}/Windows");
+
+                EditorGUI.BeginChangeCheck();
+                useIndexFinger = EditorGUILayout.ToggleLeft(new GUIContent(
+                    "Use index finger to draw", "By default, you draw " +
+                    "with a shiny pen. Check this to draw with your index finger instead."
+                ), useIndexFinger);
+
+                if (!marker.isQuest)
+                {
+                    GUILayout.Space(8);
+
+                    brushSize = EditorGUILayout.ToggleLeft("Adjustable brush / eraser size", brushSize);
+
+                    if (!brushSize)
+                    {
+                        GUI.enabled = false;
+                    }
+
+                    separateEraserScaling = EditorGUILayout.ToggleLeft("Adjust eraser size separately", separateEraserScaling);
+
+                    if (!brushSize)
+                    {
+                        separateEraserScaling = false;
+                    }
+
+                    GUI.enabled = true;
+                    GUILayout.Space(8);
+
+                    localSpace = EditorGUILayout.ToggleLeft(new GUIContent(
+                        "Enable local space",
+                        "Check this to be able to attach your drawings to various locations on your body! " +
+                        "If unchecked, you can only attach your drawing to yourself."
+                    ), localSpace);
+
+                    withMenu = EditorGUILayout.ToggleLeft("Arm attached Marker Menu", withMenu);
+                }
+
+                if (EditorGUI.EndChangeCheck())
+                    ScanAvatar();
+
+                GUILayout.Space(8);
+
+
+                // display parameter memory stuff
+                using (new EditorGUILayout.HorizontalScope(boxStyle))
+                {
+                    EditorGUILayout.LabelField($"Parameter Memory Used: {bitCount}", titleStyle);
+                    if (descriptor != null)
+                        EditorGUILayout.LabelField($"Parameter Memory Available: {memoryAvailable}", titleStyle);
+                }
+                
+                // display warnings
+                for (int i = 0; i < warnings.Count; i++) {
+                    EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
+                }
+
+                // "Generate" button    
+                using (new EditorGUI.DisabledGroupScope(warnings.Count > 0 && !(warnings.Count == 1 && warnings[0].Contains("free memory"))))
+                {
+                    if (GUILayout.Button("Generate Marker (Merge with existing controllers)", buttonStyle)) {
+                        GenerateMarker(mergeOnCopy: false);
                     }
                 }
 
-				// "Generate" button
-				CheckRequirements();
-				if (warnings.Count == 0)
-				{
-					if (GUILayout.Button("Generate Marker", buttonStyle))
-					{
-						Debug.Log("Generating Marker...");
-						try
-						{
-							Generate();
-						}
-						catch (Exception e)
-						{
-							Debug.LogException(e);
-							EditorUtility.DisplayDialog("Error Generating Marker", "Sorry, an error occured generating the Marker. Please take a snapshot of this code monkey information and send it to ksivl#4278 so it can be resolved.\n=================================================\n" + e.Message + "\n" + e.Source + "\n" + e.StackTrace, "OK");
-						};
-					}
-				}
-				else
-				{
-					for (int i = 0; i < warnings.Count; i++)
-					{
-						GUILayout.Box(warnings[i], boxStyle);
-					}
-					GUI.enabled = false;
-					GUILayout.Button("Generate Marker", buttonStyle);
-					GUI.enabled = true;
-				}
+                using (new EditorGUI.DisabledGroupScope(warnings.Count > 0 && !(warnings.Count == 1 && warnings[0].Contains("free memory"))))
+                {
+                    if (GUILayout.Button("Generate Marker (Merge with a copy of controllers)", buttonStyle))
+                    {
+                        GenerateMarker(mergeOnCopy: true);
+                    }
+                }
 
-				// "Remove" button
-				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
-				{
-					if (GUILayout.Button("Remove Marker", buttonStyle))
-					{
-						if (EditorUtility.DisplayDialog("Remove Marker", "Uninstall the VRLabs Marker from the avatar?", "Yes", "No"))
-						{
-							Uninstall();
-							Debug.Log("Successfully removed Marker.");
-						}
-					}
-				}
-				else
-				{
-					GUI.enabled = false;
-					GUILayout.Button("Remove Marker", buttonStyle);
-					GUI.enabled = true;
-				}
-			}
-			// Once script is run
-			else if (((Marker)target).finished == true)
-			{
-				GUILayout.Space(8);
-				if (GUILayout.Button(new GUIContent("Adjust MarkerTarget transform", "If needed, move, rotate, or scale MarkerTarget so it's either in your hand (marker model) or at the tip of your index finger (no marker model).")))
-				{
-					if (((Marker)target).markerTarget.gameObject == null)
-					{
-						Debug.LogError("Can't find MarkerTarget! It may have been moved or deleted.");
-					} 
-					else
-					{
-						Selection.activeGameObject = ((Marker)target).markerTarget.gameObject;
-					}
-				}
+                GUILayout.Space(16);
 
-				GUILayout.Space(8);
+                // "Remove" button
+                bool hasPCInstall = ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedPC, "M_", "Marker");
+                bool hasQuestInstall = ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedQuest, "M_", "Marker");
+                using (new EditorGUI.DisabledGroupScope(!(hasPCInstall || hasQuestInstall)))
+                {
+                    if (GUILayout.Button("Remove Marker", buttonStyle))
+                    {
+                        if (EditorUtility.DisplayDialog("Remove Marker", "Uninstall the VRLabs Marker from the avatar?", "Yes", "No"))
+                        {
+                            MarkerInstaller.Uninstall(descriptor);
+                            Debug.Log($"{MarkerStaticResources.MarkerLogTag}Successfully removed Marker.");
 
-				if (EditorApplication.isPlaying)
-				{
-					GUI.enabled = false;
-					GUILayout.Button("Finish Setup", buttonStyle);
-					GUI.enabled = true;
-				}
-				else
-				{
-					if (GUILayout.Button("Finish Setup", buttonStyle))
-					{
+                            if (descriptor.baseAnimationLayers[(int)ScriptFunctions.PlayableLayer.FX].animatorController.name.ToLower().EndsWith("_marker") ||
+                                descriptor.baseAnimationLayers[(int)ScriptFunctions.PlayableLayer.Gesture].animatorController.name.ToLower().EndsWith("_marker"))
+                            {
+                                Debug.LogWarning($"{MarkerStaticResources.MarkerLogTag}DON'T FORGET TO CHANGE THE FX AND GESTURE CONTROLLERS BACK TO YOUR ORIGINAL ONES!");
+                            }
+                        }
+                    }
+                }
+            }
+            // Once script is run
+            //else if(!marker.isQuest)
+            else
+            {
+                GUILayout.Space(8);
+
+                GUIStyle redBoldLabel = new GUIStyle(EditorStyles.label);
+                redBoldLabel.normal.textColor = Color.red;
+                redBoldLabel.fontStyle = FontStyle.Bold;
+
+                var style = new GUIStyle(EditorStyles.label)
+                {
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 16
+                };
+                style.normal.textColor = Color.red;
+                style.hover.textColor = Color.red;
+                style.active.textColor = Color.red;
+                style.focused.textColor = Color.red;
+
+                GUILayout.Label("Make sure you have gizmos enabled!", style);
+
+                GUILayout.Space(8);
+
+                marker.showGizmos = EditorGUILayout.ToggleLeft(
+                    "Show Gizmos", 
+                    marker.showGizmos
+                );
+
+                // Mirroring is not available on Quest, as the marker is directly on the hand
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    mirrorPosition = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Mirror Position", "Move both marker target positions simultaneously"),
+                        mirrorPosition,
+                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
+                    );
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    mirrorRotation = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Mirror Rotation", "Rotate both marker targets simultaneously"),
+                        mirrorRotation,
+                        GUILayout.Width(EditorGUIUtility.currentViewWidth / 3)
+                    );
+                }
+
+                EditorGUILayout.Space(10);
+
+                Animator animator = FindAnimator(marker.transform);
+
+                if (!marker.isQuest)
+                {
+                    GUIStyle centeredBoldLabel = new GUIStyle(EditorStyles.label);
+                    centeredBoldLabel.fontSize = 16;
+                    centeredBoldLabel.alignment = TextAnchor.MiddleCenter;
+                    centeredBoldLabel.fontStyle = FontStyle.Bold;
+
+                    EditorGUILayout.LabelField("Marker", centeredBoldLabel);
+                    EditorGUILayout.Space(5);
+
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button(new GUIContent("Adjust Right Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
+                        "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                    {
+                        if (((Marker)target).markerTargetRight.gameObject == null)
+                        {
+                            Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find MarkerTarget! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                            source1.Weight = 0f;
+                            constraint.Sources[1] = source1;
+                            VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                            source2.Weight = 1f;
+                            constraint.Sources[0] = source2;
+
+                            markerTargetObject = marker.markerTargetRight.gameObject;
+                            if (marker.markerModel != null)
+                            {
+                                marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                            }
+                            if (marker.menu != null)
+                            {
+                                marker.menu.gameObject.SetActive(false);
+                            }
+
+                            marker.gizmosMenu = false;
+                            
+                            StartAnimationPreview();
+                        }
+                    }
+
+                    if (GUILayout.Button(new GUIContent("Adjust Left Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
+                        "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                    {
+                        if (((Marker)target).markerTargetLeft.gameObject == null)
+                        {
+                            Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find MarkerTarget! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.system.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                            source1.Weight = 1f;
+                            constraint.Sources[1] = source1;
+                            VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                            source2.Weight = 0f;
+                            constraint.Sources[0] = source2;
+
+                            markerTargetObject = marker.markerTargetLeft.gameObject;
+                            if (marker.markerModel != null)
+                            {
+                                marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                            }
+                            if (marker.menu != null)
+                            {
+                                marker.menu.gameObject.SetActive(false);
+                            }
+                            
+                            marker.gizmosMenu = false;
+                            
+                            StartAnimationPreview();
+                        }
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+                else
+                {
+                    // Quest
+                    /*if (GUILayout.Button(new GUIContent("Adjust Marker Position", "If needed, move, rotate or scale the Marker so it lines up with your finger"), GUILayout.Height(35)))
+                    {
+                        GameObject markerObject = GetQuestMarkerObject();
+
+                        if (markerObject == null)
+                        {
+                            Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find Marker! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            mirrorPosition = false;
+                            mirrorRotation = false;
+                            markerTargetObject = markerObject;
+                            ((Marker)target).markerScale = markerObject.transform;
+                            StartAnimationPreview();
+                        }
+                    }*/
+
+                    EditorGUILayout.BeginHorizontal();
+
+                    if (GUILayout.Button(new GUIContent("Adjust Right Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
+                        "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                    {
+                        if (((Marker)target).markerTargetRight.gameObject == null)
+                        {
+                            Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find MarkerTarget! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            GameObject markerObject = GetQuestMarkerObject();
+
+                            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = markerObject.GetComponent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                            source1.Weight = 1f;
+                            constraint.Sources[1] = source1;
+                            VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                            source2.Weight = 0f;
+                            constraint.Sources[0] = source2;
+
+                            if (markerObject == null)
+                            {
+                                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find marker");
+                            }
+                            else
+                            {
+                                markerTargetObject = marker.markerTargetRight.gameObject;
+                                ((Marker)target).markerScale = markerObject.transform;
+
+                                if (marker.markerModel != null)
+                                {
+                                    marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                                }
+                                marker.gizmosMenu = false;
+
+                                StartAnimationPreview();
+                            }
+                        }
+                    }
+
+                    if (GUILayout.Button(new GUIContent("Adjust Left Marker Position", "If needed, move, rotate, or scale MarkerTarget " +
+                        "so it's either in your hand (marker model) or at the tip of your index finger (no marker model)."), GUILayout.Height(35)))
+                    {
+                        if (((Marker)target).markerTargetLeft.gameObject == null)
+                        {
+                            Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find MarkerTarget! It may have been moved or deleted.");
+                        }
+                        else
+                        {
+                            GameObject markerObject = GetQuestMarkerObject();
+
+                            VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = markerObject.GetComponent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[1];
+                            source1.Weight = 0f;
+                            constraint.Sources[1] = source1;
+                            VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[0];
+                            source2.Weight = 1f;
+                            constraint.Sources[0] = source2;
+
+                            if (markerObject == null)
+                            {
+                                Debug.LogError($"{MarkerStaticResources.MarkerLogTag}Can't find marker");
+                            }
+                            else
+                            {
+                                markerTargetObject = marker.markerTargetLeft.gameObject;
+                                ((Marker)target).markerScale = markerObject.transform;
+
+                                if (marker.markerModel != null)
+                                {
+                                    marker.markerModel.GetComponent<MeshRenderer>().enabled = true;
+                                }
+                                marker.gizmosMenu = false;
+
+                                StartAnimationPreview();
+                            }
+                        }
+                    }
+
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                if (GUILayout.Button("Reset Marker Target"))
+                {
+                    marker.markerTargetLeft.transform.localPosition = Vector3.zero;
+                    marker.markerTargetLeft.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                    marker.markerTargetRight.transform.localPosition = Vector3.zero;
+                    marker.markerTargetRight.transform.localRotation = Quaternion.Euler(180, 0, 0);
+                    ((Marker)target).markerScale.localScale = Vector3.one;
+                }
+
+                if (!marker.isQuest && marker.withMenu)
+                {
+                    GUILayout.Space(40);
+
+                    GUIStyle centeredBoldLabel = new GUIStyle(EditorStyles.label);
+                    centeredBoldLabel.fontSize = 16;
+                    centeredBoldLabel.alignment = TextAnchor.MiddleCenter;
+                    centeredBoldLabel.fontStyle = FontStyle.Bold;
+
+                    EditorGUILayout.LabelField("Menu", centeredBoldLabel);
+                    GUILayout.Space(5);
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button(new GUIContent("Adjust Right Menu Target", "If needed, move, rotate or scale MenuTarget"), GUILayout.Height(35)))
+                    {
+                        menuScale = marker.menuScale.gameObject;
+                        markerTargetObject = marker.menuTargetRight.gameObject;
+
+                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.menu.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[0];
+                        source1.Weight = 1f;
+                        constraint.Sources[0] = source1;
+                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[1];
+                        source2.Weight = 0f;
+                        constraint.Sources[1] = source2;
+
+                        if (marker.menu != null)
+                        {
+                            marker.menu.gameObject.SetActive(true);
+                        }
+                        if (marker.markerModel != null)
+                        {
+                            marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        }
+                        
+                        marker.gizmosMenu = true;
+
+                        StartAnimationPreview();
+                    }
+
+                    if (GUILayout.Button(new GUIContent("Adjust Left Menu Target", "If needed, move, rotate or scale MenuTarget"), GUILayout.Height(35)))
+                    {
+                        menuScale = marker.menuScale.gameObject;
+                        markerTargetObject = marker.menuTargetLeft.gameObject;
+
+                        VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint constraint = marker.menu.GetComponentInParent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        VRC.Dynamics.VRCConstraintSource source1 = constraint.Sources[0];
+                        source1.Weight = 0f;
+                        constraint.Sources[0] = source1;
+                        VRC.Dynamics.VRCConstraintSource source2 = constraint.Sources[1];
+                        source2.Weight = 1f;
+                        constraint.Sources[1] = source2;
+                        
+                        if (marker.menu != null)
+                        {
+                            marker.menu.gameObject.SetActive(true);
+                        }
+                        if (marker.markerModel != null)
+                        {
+                            marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        }
+
+                        marker.gizmosMenu = true;
+
+                        StartAnimationPreview();
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    if (GUILayout.Button("Reset Menu Target"))
+                    {
+                        marker.menuTargetLeft.transform.localPosition = Vector3.zero;
+                        marker.menuTargetLeft.transform.localRotation = Quaternion.Euler(270, 180, 0);
+                        marker.menuTargetRight.transform.localPosition = Vector3.zero;
+                        marker.menuTargetRight.transform.localRotation = Quaternion.Euler(270, 0, 0);
+                        marker.menu.parent.localScale = Vector3.one;
+                    }
+
+                    GUILayout.Space(30);
+                }
+
+                GUILayout.Space(8);
+
+                if (EditorApplication.isPlaying)
+                {
+                    AnimationMode.StopAnimationMode();
+                    StopAnimationPreview();
+
+                    GUI.enabled = false;
+                    GUILayout.Button("Finish Setup", buttonStyle);
+                    GUI.enabled = true;
+                }
+                else
+                {
+                    if (GUILayout.Button("Finish Setup", buttonStyle))
+                    {
+                        if (marker.markerModel != null)
+                        {
+                            marker.markerModel.GetComponent<MeshRenderer>().enabled = false;
+                        }
+
+                        if (marker.menu != null)
+                        {
+                            marker.menu.gameObject.SetActive(false);
+                        }
+
+                        if (marker.isQuest)
+                        {
+                            GameObject markerObject = GetQuestMarkerObject();
+
+                            if (markerObject != null)
+                            {
+                                Transform model = markerObject.transform.Find("Marker");
+
+                                if (model != null)
+                                {
+                                    if (model.GetComponent<MeshRenderer>() != null)
+                                    {
+                                        model.GetComponent<MeshRenderer>().enabled = false;
+                                    }
+                                }
+
+                                Transform trailRenderer = markerObject.transform.Find("Draw");
+
+                                if (trailRenderer != null)
+                                {
+                                    if (trailRenderer.GetComponent<TrailRenderer>() != null)
+                                    {
+                                        trailRenderer.GetComponent<TrailRenderer>().time = 0;
+                                    }
+                                }
+                            }
+                        }
+
+                        StopAnimationPreview();
+
                         DestroyImmediate(((Marker)target));
                         DestroyImmediate(this);
                         // end script
                     }
                 }
-			}
+            }
 
-			((Marker)target).leftHanded = leftHanded;
-			((Marker)target).wdSetting = wdSetting;
-			((Marker)target).brushSize = brushSize;
-			((Marker)target).eraserSize = eraserSize;
-			((Marker)target).localSpace = localSpace;
-			((Marker)target).localSpaceFullBody = localSpaceFullBody;
-			((Marker)target).useIndexFinger = useIndexFinger;
-			((Marker)target).gestureToDraw = gestureToDraw;
-		}
-		private void SetPreviousInstallSettings()
+            marker.wdSetting = wdSetting;
+            marker.brushSize = brushSize;
+            marker.leftHanded = leftHanded;
+            marker.separateEraserScaling = separateEraserScaling;
+            marker.localSpace = localSpace;
+            marker.useIndexFinger = useIndexFinger;
+            marker.localSpaceFullBody = localSpaceFullBody;
+            marker.generateMasterMask = generateMasterMask;
+            marker.withMenu = withMenu;
+
+            GUI.enabled = true;
+        }
+
+        private GameObject GetQuestMarkerObject()
         {
-			if (descriptor != null)
-			{
-				if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsed, "M_", "Marker"))
-				{
-					if ((descriptor.baseAnimationLayers.Length >= 5) && (descriptor.baseAnimationLayers[4].animatorController is AnimatorController controller) && (controller != null))
-					// 1st cond: must have all 5 humanoid layers in descriptor
-					{
-						leftHanded = controller.HasLayer("M_Marker L");
-						brushSize = controller.HasLayer("M_Size");
-						eraserSize = controller.HasLayer("M_EraserSize");
-						localSpace = (!controller.HasLayer("M_SpaceSimple")) && (!controller.HasLayer("M_CullSimple"));
+            Animator avatar = descriptor.gameObject.GetComponent<Animator>();
 
-						int index = -1;
-						for (int i = 0; i < controller.layers.Length; i++)
+            GameObject markerObject = null;
+
+            if (avatar.GetBoneTransform(HumanBodyBones.LeftHand).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.LeftHand).Find("Marker").gameObject;
+            else if (avatar.GetBoneTransform(HumanBodyBones.RightHand).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.RightHand).Find("Marker").gameObject;
+            else if (avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal).Find("Marker").gameObject;
+            else if (avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal).Find("Marker") != null)
+                markerObject = avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal).Find("Marker").gameObject;
+            else if (descriptor.transform.Find("Marker") != null)
+                markerObject = descriptor.transform.Find("Marker").gameObject;
+
+            return markerObject;
+        }
+
+        private void StartAnimationPreview()
+        {
+            AnimatorController previewController = null;
+
+            if (!marker.useIndexFinger)
+            {
+                previewController = AssetDatabase.LoadAssetAtPath<AnimatorController>(AssetDatabase.GUIDToAssetPath(MarkerStaticResources.PreviewAnimatorPen));
+            }
+            else
+            {
+                previewController = AssetDatabase.LoadAssetAtPath<AnimatorController>(AssetDatabase.GUIDToAssetPath(MarkerStaticResources.PreviewAnimatorNoPen));
+            }
+
+            if (previewController == null)
+            {
+                Debug.Log($"{MarkerStaticResources.MarkerLogTag}Preview Controller not found");
+                return;
+            }
+
+            Animator animator = FindAnimator(marker.transform);
+
+            if (animator == null) animator = descriptor.gameObject.GetComponent<Animator>();
+            if (originalController == null && animator.runtimeAnimatorController != previewController)
+                originalController = animator.runtimeAnimatorController;
+
+            animator.runtimeAnimatorController = previewController;
+
+            AnimationMode.StartAnimationMode();
+            AnimationMode.BeginSampling();
+            AnimationMode.SampleAnimationClip(animator.gameObject, previewController.animationClips.ElementAt(0), 0f);
+            AnimationMode.EndSampling();
+        }
+
+        private void StopAnimationPreview()
+        {
+            AnimationMode.StopAnimationMode();
+
+            Animator animator = FindAnimator(marker.transform);
+            if (animator) animator.runtimeAnimatorController = originalController;
+        }
+
+        void GenerateMarker(bool mergeOnCopy)
+        {
+            Debug.Log($"{MarkerStaticResources.MarkerLogTag}Generating Marker...");
+            try
+            {
+                Marker markerRef = target as Marker;
+                MarkerInstaller.Generate(descriptor, ref markerRef, marker.isQuest, mergeOnCopy);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                EditorUtility.DisplayDialog("Error Generating Marker", "Sorry, an error occured generating the Marker. " +
+                    "Please take a snapshot (hint: use shift + windows key + S) of this code monkey information and send " +
+                    "it to ksivl#4278 so it can be resolved.\n=================================================\n" +
+                    e.Message + "\n" + e.Source + "\n" + e.StackTrace, "OK");
+            };
+        }
+
+        void ScanAvatar()
+        {
+            try
+            {
+                if (descriptor == null) return;
+                animator = descriptor.gameObject.GetComponent<Animator>();
+
+                memoryAvailable = 256;
+                if (descriptor.expressionParameters != null)
+                    memoryAvailable -= descriptor.expressionParameters.CalcTotalCost();
+
+                // Check WD
+                var states = descriptor.AnalyzeWDState();
+                bool isMixed = states.HaveMixedWriteDefaults(out bool isOn);
+
+                if (isMixed)
+                {
+                    GUILayout.Box("Your avatar has mixed Write Defaults settings on its playable layers' states, " +
+                        "which can cause issues with animations. The VRChat standard is Write Defaults OFF. " +
+                        "It is recommended that Write Defaults for all states should either be all ON or all OFF.", boxStyle);
+                }
+                else
+                {
+                    wdSetting = isOn;
+                    isWdAutoSet = true;
+                }
+
+                bool hasEmptyAnimations = states.HaveEmpyMotionsInStates();
+
+                if (hasEmptyAnimations)
+                {
+                    GUILayout.Box("Some states have no motions, this can be an issue when using WD Off.", boxStyle);
+                }
+
+                CheckRequirements();
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
+        void SetPreviousInstallSettings()
+        {
+            if (descriptor != null)
+            {
+                if (ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedPC, "M_", "Marker")
+                    || ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedQuest, "M_", "Marker"))
+                {
+                    if ((descriptor.baseAnimationLayers.Length >= 5)
+                        && (descriptor.baseAnimationLayers[4].animatorController is AnimatorController controller)
+                        && (controller != null))
+                    // 1st cond: must have all 5 humanoid layers in descriptor
+                    {
+                        leftHanded = controller.HasLayer("M_Marker L");
+                        brushSize = controller.HasLayer("M_Size");
+                        separateEraserScaling = controller.HasLayer("M_EraserSize");
+                        localSpace = (!controller.HasLayer("M_SpaceSimple")) && (!controller.HasLayer("M_CullSimple"));
+
+                        int index = -1;
+                        for (int i = 0; i < controller.layers.Length; i++)
                         {
-							if (controller.layers[i].name.StartsWith("M_Marker"))
+                            if (controller.layers[i].name.StartsWith("M_Marker"))
                             {
-								index = i;
-								break;
-							}
+                                index = i;
+                                break;
+                            }
                         }
-						if (index != -1)
+                        if (index != -1)
                         {
-							AnimatorStateTransition[] transitions = controller.layers[index].stateMachine.states.SelectMany(x => x.state.transitions).ToArray();
-							AnimatorCondition[] conditions = transitions.SelectMany(x => x.conditions).Where(x => x.parameter.Contains("Gesture")).ToArray();
-							if (conditions.Length > 0)
-								gestureToDraw = (int)conditions[0].threshold;
-						}
-					}
-					if (descriptor.transform.Find("Marker/Model") == null) useIndexFinger = true;
-					if ((descriptor.transform.Find("Marker/World/Local") is Transform t) && (t != null))
-					{
-						if ((t.GetComponent<VRCParentConstraint>() is VRCParentConstraint p) && (p != null))
-							if ((p.Sources[6].SourceTransform != null) && (p.Sources[7].SourceTransform != null))
-								localSpaceFullBody = 1;
-					}
-				}
-			}
-		}
-		public void Uninstall()
+                            AnimatorStateTransition[] transitions = controller.layers[index]
+                                .stateMachine.states.SelectMany(x => x.state.transitions)
+                                .ToArray();
+
+                            AnimatorCondition[] conditions = transitions
+                                .SelectMany(x => x.conditions)
+                                .Where(x => x.parameter.Contains("Gesture"))
+                                .ToArray();
+
+                            if (conditions.Length > 0)
+                                marker.gestureToDraw = (int)conditions[0].threshold;
+                        }
+                    }
+                    if (descriptor.transform.Find("Marker/Model") == null) useIndexFinger = true;
+                    if ((descriptor.transform.Find("Marker/World/Local") is Transform t) && (t != null))
+                    {
+                        if ((t.GetComponent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>() is VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint p) && (p != null))
+                            if ((p.Sources[6].SourceTransform != null) && (p.Sources[7].SourceTransform != null))
+                                localSpaceFullBody = 1;
+
+                        //if ((t.GetComponent<ParentConstraint>() is ParentConstraint p) && (p != null))
+                        //    if ((p.GetSource(6).sourceTransform != null) && (p.GetSource(7).sourceTransform != null))
+                        //        localSpaceFullBody = 1;
+                    }
+                }
+            }
+        }
+
+        void CheckRequirements()
         {
-			ScriptFunctions.UninstallControllerByPrefix(descriptor, "M_", ScriptFunctions.PlayableLayer.FX);
-			ScriptFunctions.UninstallControllerByPrefix(descriptor, "M_", ScriptFunctions.PlayableLayer.Gesture);
-			ScriptFunctions.UninstallParametersByPrefix(descriptor, "M_");
-			ScriptFunctions.UninstallMenu(descriptor, "Marker");
-			if (descriptor != null)
+            /* Possible Warnings */
+            /* folder exists
+             * descriptor is null
+             * descriptor has expression parameters
+             * descriptor has expressions menu
+             * animator exists
+             * avatar is humanoid
+             * has base animator layers
+             * check avatar is humanoid and layers are valid
+             * check all humanoid layers exist (since they can disappear when avatar rig is set human -> generic -> human)
+             */
+
+            warnings.Clear();
+
+            if (descriptor == null) {
+                warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, " +
+                    "or create an avatar descriptor here.");
+                return;
+            }
+
+            VRCExpressionParameters parameters = descriptor.expressionParameters;
+            if (parameters != null && parameters.CalcTotalCost() > (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount))
             {
-				Transform foundMarker = descriptor.transform.Find("Marker");
-				if (foundMarker != null)
-					DestroyImmediate(foundMarker.gameObject);
-				if (avatar.isHuman)
-                {
-					HumanBodyBones[] bonesToSearch = { HumanBodyBones.LeftHand, HumanBodyBones.RightHand };
-					for (int i = 0; i < bonesToSearch.Length; i++)
-					{
-						GameObject foundTarget = ScriptFunctions.FindObject(descriptor, bonesToSearch[i], "MarkerTarget", true);
-						if (foundTarget != null)
-							DestroyImmediate(foundTarget);
-					}
-				}
-			}
-		}
+                warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. " +
+                    "You need " + (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount) + " or fewer bits of parameter " +
+                    "memory utilized.");
+            }
 
-        public void Generate()
-		{
-			Uninstall();
-			// Unique directory setup, named after avatar
-			Directory.CreateDirectory("Assets/VRLabs/GeneratedAssets/Marker/");
-			AssetDatabase.Refresh();
-			// Folder name cannot contain these chars
-			string cleanedName = string.Join("", descriptor.name.Split('/', '?', '<', '>', '\\', ':', '*', '|', '\"'));
-			string guid = AssetDatabase.CreateFolder("Assets/VRLabs/GeneratedAssets/Marker", cleanedName);
-			string directory = AssetDatabase.GUIDToAssetPath(guid) + "/";
+            VRCExpressionsMenu menu = descriptor.expressionsMenu;
+            if (menu != null && menu.controls.Count == 8) {
+                warnings.Add("Your avatar's topmost menu is full. Please have at least one empty control slot available.");
+            }
 
-			// Install layers, parameters, and menu before prefab setup
-			// FX layer
-			if (useIndexFinger)
-				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("M_FX (Finger)")), directory + "FXtemp.controller");
-			else
-				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("M_FX")), directory + "FXtemp.controller");
-			AnimatorController FX = AssetDatabase.LoadAssetAtPath(directory + "FXtemp.controller", typeof(AnimatorController)) as AnimatorController;
-
-			// remove controller layers before merging to avatar, corresponding to setup
-			if (leftHanded)
-				ScriptFunctions.RemoveLayer(FX, "M_Marker R");
-			else
-				ScriptFunctions.RemoveLayer(FX, "M_Marker L");
-
-			if (!brushSize)
-			{
-				ScriptFunctions.RemoveLayer(FX, "M_Size");
-				ScriptFunctions.RemoveParameter(FX, "M_Size");
-			}
-
-			if (!eraserSize)
-			{
-				ScriptFunctions.RemoveLayer(FX, "M_EraserSize");
-				ScriptFunctions.RemoveParameter(FX, "M_EraserSize");
-			}
-
-			if (!localSpace)
-			{
-				ScriptFunctions.RemoveLayer(FX, "M_Space");
-				ScriptFunctions.RemoveParameter(FX, "M_Space");
-				ScriptFunctions.RemoveLayer(FX, "M_Cull");
-			}
-			else
-			{
-				ScriptFunctions.RemoveLayer(FX, "M_SpaceSimple");
-				ScriptFunctions.RemoveParameter(FX, "M_SpaceSimple");
-				ScriptFunctions.RemoveLayer(FX, "M_CullSimple");
-			}
-
-			if (wdSetting)
-			{
-				ScriptFunctions.SetWriteDefaults(FX);
-			}
-			if (gestureToDraw != 3) // uses fingerpoint by default
-			{
-				ChangeGestureCondition(FX, 0, gestureToDraw);
-			}
-
-			// Set parameter driver on 'Clear' state to reset local space
-			AnimatorState state = FX.layers[0].stateMachine.states.FirstOrDefault(s => s.state.name.Equals("Clear")).state;
-			VRCAvatarParameterDriver driver = (VRCAvatarParameterDriver)state.behaviours[0];
-			string driverParamName = localSpace ? "M_Space" : "M_SpaceSimple";
-			VRC.SDKBase.VRC_AvatarParameterDriver.Parameter param = new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter()
-			{
-				name = driverParamName,
-				type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set,
-				value = 0f
-			};
-			driver.parameters.Add(param);
-
-			EditorUtility.SetDirty(FX);
-			ScriptFunctions.MergeController(descriptor, FX, ScriptFunctions.PlayableLayer.FX, directory);
-			AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(FX)); // delete temporary FX layer
-
-			// Gesture layer
-			AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("M_Gesture")), directory + "gestureTemp.controller"); // to modify
-			AnimatorController gesture = AssetDatabase.LoadAssetAtPath(directory + "gestureTemp.controller", typeof(AnimatorController)) as AnimatorController;
-
-			if (descriptor.baseAnimationLayers[2].isDefault == true || descriptor.baseAnimationLayers[2].animatorController == null)
-			{
-				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<AnimatorController>("Default/M_DefaultGesture")), directory + "Gesture.controller");
-				AnimatorController gestureOriginal = AssetDatabase.LoadAssetAtPath(directory + "Gesture.controller", typeof(AnimatorController)) as AnimatorController;
-
-				descriptor.customExpressions = true;
-				descriptor.baseAnimationLayers[2].isDefault = false;
-				descriptor.baseAnimationLayers[2].animatorController = gestureOriginal;
-
-				if (wdSetting)
-				{
-					ScriptFunctions.SetWriteDefaults(gestureOriginal);
-					EditorUtility.SetDirty(gestureOriginal);
-				}
-			}
-			
-			gesture.RemoveLayer((leftHanded) ? 1 : 0);
-			if (useIndexFinger)
-			{   // use different hand animations
-				for (int i = 0; i < 3; i++)
-				{
-					if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture")
-					{
-						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<AnimationClip>("Animations/Gesture/M_Gesture (Finger)")), typeof(AnimationClip)) as AnimationClip;
-					}
-					else if (gesture.layers[0].stateMachine.states[i].state.motion.name == "M_Gesture Draw")
-					{
-						gesture.layers[0].stateMachine.states[i].state.motion = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<AnimationClip>("Animations/Gesture/M_Gesture Draw (Finger)")), typeof(AnimationClip)) as AnimationClip;
-					}
-				}
-			}
-			if (gestureToDraw != 3)
-			{
-				ChangeGestureCondition(gesture, 0, gestureToDraw);
-			}
-			if (wdSetting)
-			{
-				ScriptFunctions.SetWriteDefaults(gesture, true);
-			}
-
-			EditorUtility.SetDirty(gesture);
-			ScriptFunctions.MergeController(descriptor, gesture, ScriptFunctions.PlayableLayer.Gesture, directory);
-			AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(gesture)); // delete temporary gesture layer
-
-			// layer weight control from merged layer may need index set correctly
-			AnimatorController avatarGesture = (AnimatorController)descriptor.baseAnimationLayers[2].animatorController;
-			for (int i = 0; i < avatarGesture.layers.Length; i++)
-			{   // the controls' layer is normally 3 (AllParts, LeftHand, RightHand, >>>M_Gesture<<<)
-				if (avatarGesture.layers[i].name.Contains("M_Gesture") && (i != 3))
-				{   
-					for (int j = 0; j < 3; j++)
-					{
-						if (avatarGesture.layers[i].stateMachine.states[j].state.behaviours.Length != 0)
-						{
-							VRCAnimatorLayerControl ctrl = (VRCAnimatorLayerControl)avatarGesture.layers[i].stateMachine.states[j].state.behaviours[0];
-							ctrl.layer = i;
-						}
-					}
-				}
-			}
-			
-			EditorUtility.SetDirty(avatarGesture);
-
-			// Parameters
-			VRCExpressionParameters.Parameter
-			p_marker = new VRCExpressionParameters.Parameter
-				{ name = "M_Marker", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
-			p_eraser = new VRCExpressionParameters.Parameter
-				{ name = "M_Eraser", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
-			p_clear = new VRCExpressionParameters.Parameter
-				{ name = "M_Clear", valueType = VRCExpressionParameters.ValueType.Bool, saved = false },
-			p_color = new VRCExpressionParameters.Parameter
-				{ name = "M_Color", valueType = VRCExpressionParameters.ValueType.Float, saved = true };
-			ScriptFunctions.AddParameter(descriptor, p_marker, directory);
-			ScriptFunctions.AddParameter(descriptor, p_eraser, directory);
-			ScriptFunctions.AddParameter(descriptor, p_clear, directory);
-			ScriptFunctions.AddParameter(descriptor, p_color, directory);
-
-			if (localSpace)
-			{
-				VRCExpressionParameters.Parameter p_space = new VRCExpressionParameters.Parameter
-					{ name = "M_Space", valueType = VRCExpressionParameters.ValueType.Int, saved = false };
-				ScriptFunctions.AddParameter(descriptor, p_space, directory);
-			}
-			else
-			{
-				VRCExpressionParameters.Parameter p_spaceSimple = new VRCExpressionParameters.Parameter
-					{ name = "M_SpaceSimple", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
-				ScriptFunctions.AddParameter(descriptor, p_spaceSimple, directory);
-			}
-
-			if (brushSize)
-			{
-				VRCExpressionParameters.Parameter p_size = new VRCExpressionParameters.Parameter
-					{ name = "M_Size", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
-				ScriptFunctions.AddParameter(descriptor, p_size, directory);
-			}
-			if (eraserSize)
-			{
-				VRCExpressionParameters.Parameter p_eraserSize = new VRCExpressionParameters.Parameter
-					{ name = "M_EraserSize", valueType = VRCExpressionParameters.ValueType.Float, saved = false };
-				ScriptFunctions.AddParameter(descriptor, p_eraserSize, directory);
-			}
-
-			VRCExpressionParameters.Parameter p_menu = new VRCExpressionParameters.Parameter
-				{ name = "M_Menu", valueType = VRCExpressionParameters.ValueType.Bool, saved = false };
-			ScriptFunctions.AddParameter(descriptor, p_menu, directory);
-
-			// handle menu instancing
-			AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<VRCExpressionsMenu>("M_Menu")), directory + "Marker Menu.asset");
-			VRCExpressionsMenu markerMenu = AssetDatabase.LoadAssetAtPath(directory + "Marker Menu.asset", typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
-			
-			if (!localSpace) // change from submenu to 1 toggle
-			{
-				VRCExpressionsMenu.Control.Parameter pm_spaceSimple = new VRCExpressionsMenu.Control.Parameter 
-					{ name = "M_SpaceSimple" };
-				markerMenu.controls[6].type = VRCExpressionsMenu.Control.ControlType.Toggle;
-				markerMenu.controls[6].parameter = pm_spaceSimple;
-				markerMenu.controls[6].subMenu = null; // or else the submenu is still there internally, SDK complains
-			}
-			else
-			{
-				AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(Resources.Load<VRCExpressionsMenu>("M_Menu Space")), directory + "Marker Space Submenu.asset");
-				VRCExpressionsMenu subMenu = AssetDatabase.LoadAssetAtPath(directory + "Marker Space Submenu.asset", typeof(VRCExpressionsMenu)) as VRCExpressionsMenu;
-
-				if (localSpaceFullBody == 0) // remove left and right foot controls
-				{
-					subMenu.controls.RemoveAt(7);
-					subMenu.controls.RemoveAt(6);
-				}
-				markerMenu.controls[6].subMenu = subMenu;
-				EditorUtility.SetDirty(subMenu);
-			}
-
-			if (!brushSize)
-				ScriptFunctions.RemoveMenuControl(markerMenu, "Brush Size");
-
-			if (!eraserSize)
-				ScriptFunctions.RemoveMenuControl(markerMenu, "Eraser Size");
-
-			EditorUtility.SetDirty(markerMenu);
-
-			VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter
-				{ name = "M_Menu" };
-			Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<Texture2D>("Icons/M_Icon_Menu")), typeof(Texture2D)) as Texture2D;
-			ScriptFunctions.AddSubMenu(descriptor, markerMenu, "Marker", directory, pm_menu, markerIcon);
-
-			// setup in scene
-			GameObject marker = PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(Resources.Load<GameObject>("Marker")), typeof(GameObject))) as GameObject;
-			if (PrefabUtility.IsPartOfPrefabInstance(marker))
-				PrefabUtility.UnpackPrefabInstance(marker, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-			marker.transform.SetParent(avatar.transform, false);
-
-			Transform system = marker.transform.Find("System");
-			Transform targets = marker.transform.Find("Targets");
-		    Transform markerTarget = targets.Find("MarkerTarget");
-			Transform markerModel = targets.Find("Model");
-			Transform eraser = system.Find("Eraser");
-			Transform local = marker.transform.Find("World").Find("Local");
-
-			// constrain cull object to avatar
-			Transform cull = marker.transform.Find("Cull");
-			cull.GetComponent<VRCParentConstraint>().Sources[0] =  new VRCConstraintSource(descriptor.transform, 1f, Vector3.zero,  Vector3.zero);
-			Type constraintType = typeof(VRC.Dynamics.VRCConstraintBase);
-			MethodInfo method = constraintType.GetMethod("RequestFullNativeUpdate", 
-				BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-			method.Invoke(cull.GetComponent<VRCParentConstraint>(), new object[0]);
-			if (useIndexFinger) 
-			{ 
-				DestroyImmediate(markerTarget.GetChild(0).gameObject); // destroy Flip
-				Transform indexDistal = leftHanded ? avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) : avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal);
-
-				 // prefer the end bone of the index finger if it exists
-				if (indexDistal.Find(indexDistal.gameObject.name + "_end") != null)
-					markerTarget.SetParent(indexDistal.Find(indexDistal.gameObject.name + "_end"), true);
-				else
-					markerTarget.SetParent(indexDistal, true);
-				markerTarget.localPosition = Vector3.zero;
-				markerTarget.localRotation = Quaternion.Euler(0f, 0f, 0f);
-			}
-			else // using model: scale Model to target freely, and until script is destroyed, scale System to target uniformly with X-axis 
-			{
-				markerModel.SetParent(marker.transform); // move it out of Targets hierarchy
-
-				Transform hand = leftHanded ? avatar.GetBoneTransform(HumanBodyBones.LeftHand) : avatar.GetBoneTransform(HumanBodyBones.RightHand);
-				Transform elbow = leftHanded ? avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm) : avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
-				// need to flip the target(model). we can use the Flip object by resetting markertarget transform, getting Flip's position, then rotating markertarget
-				markerTarget.SetParent(hand, true);
-				markerTarget.localPosition = Vector3.zero;
-				markerTarget.localRotation = Quaternion.Euler(0f, 0f, 0f);
-				markerTarget.position = markerTarget.GetChild(0).transform.position;
-				markerTarget.localPosition = new Vector3(0f, markerTarget.localPosition.y, 0f); // ignore offset on x and z
-				markerTarget.localRotation = Quaternion.Euler(0f, 0f, 180f); // and flip the rotation
-
-				((Marker)target).markerModel = markerModel; // to turn its mesh renderer off when script is finished
-			}
-
-			HumanBodyBones[] bones = { HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head, HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
-			HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot };
-			VRCParentConstraint localConstraint = local.GetComponent<VRCParentConstraint>();
-
-			localConstraint.Sources[0] = new VRCConstraintSource(avatar.transform, 1f, Vector3.zero,  Vector3.zero);
-			if (localSpace)
+            if (animator == null) {
+                warnings.Add("There is no Animator on this avatar. Please add an Animator component on your avatar.");
+            }
+            else if (animator.avatar == null) 
             {
-				for (int i = 0; i < 5; i ++)
+                warnings.Add("Please add an avatar in this avatar's Animator component.");
+            } 
+            else 
+            {
+                if (!animator.isHuman) {
+                    warnings.Add("Please use this script on an avatar with a humanoid rig.");
+                    return;
+                }
+
+                // check avatar is humanoid and layers are valid
+                // check all humanoid layers exist (since they can disappear when avatar rig is set human -> generic -> human)
+                if (descriptor.baseAnimationLayers.Length < 5)
                 {
-					localConstraint.Sources[i+1] = new VRCConstraintSource(avatar.GetBoneTransform(bones[i]), 0f, Vector3.zero,  Vector3.zero);
-				}
-				if (localSpaceFullBody == 1)
-				{
-					for (int i = 5; i < 7; i++)
-					{
-						localConstraint.Sources[i + 1] = new VRCConstraintSource(avatar.GetBoneTransform(bones[i]), 0f, Vector3.zero,  Vector3.zero);
-					}
-				}
-			}
-			
-			method.Invoke(localConstraint, new object[0]);
-			
-			DestroyImmediate(targets.gameObject); // remove the "Targets" container object when finished
+                    warnings.Add("You are missing the humanoid playable layers in your avatar descriptor. " +
+                        "Try clicking 'Reset to Default' in your avatar descriptor.");
+                }
+                else if (!descriptor.baseAnimationLayers[2].isDefault) // check gesture layer validity
+                {
+                    // get gesture controller
+                    AnimatorController gestureCtrlr = descriptor.baseAnimationLayers[2].animatorController as AnimatorController;
+                    bool invalidController = gestureCtrlr != null
+                        && gestureCtrlr.name != String.Empty
+                        && (gestureCtrlr.layers[0].avatarMask == null || gestureCtrlr.layers[0].avatarMask.name == "");
 
-			// set anything not adjustable to a medium-ish amount
-			if (!eraserSize) 
-			{
-				eraser.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-			}
-			if (!brushSize)
-			{
-				ParticleSystem.MinMaxCurve size = new ParticleSystem.MinMaxCurve(0.024f);
-				Transform draw = system.transform.Find("Draw");
-				Transform preview = draw.GetChild(0);
-				ParticleSystem.MainModule main = draw.GetComponent<ParticleSystem>().main;
-				main.startSize = size;
-				main = preview.GetComponent<ParticleSystem>().main;
-				main.startSize = size;
-			}
+                    if (invalidController) {
+                        warnings.Add("The first layer of your avatar's gesture layer is missing a mask. Try " +
+                            "setting a mask, or using a copy of the VRCSDK gesture controller, or removing the " +
+                            "controller from your avatar descriptor.");
+                    }
+                }
 
-			// scale MarkerTarget, which controls prefab size, according to a (normalized) worldspace distance between avatar hips and head
-			Transform hips = avatar.GetBoneTransform(HumanBodyBones.Hips);
-			Transform head = avatar.GetBoneTransform(HumanBodyBones.Head);
-			Vector3 dist = (head.position - hips.position);
+                // check bones are mapped
+                CheckBoneMappings();
+            }
+        }
 
-			float normalizedDist = (Math.Max(Math.Max(dist.x, dist.y), dist.z) / KSIVL_UNIT);
-			float newScale = markerTarget.localScale.x * normalizedDist;
-			markerTarget.localScale = new Vector3(newScale, newScale, newScale);
+        void CheckBoneMappings()
+        {
+            // use index finger
+            Transform leftIndex = animator.GetBoneTransform(HumanBodyBones.LeftIndexDistal);
+            Transform rightIndex = animator.GetBoneTransform(HumanBodyBones.RightIndexDistal);
+            Transform leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand);
+            Transform rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
 
-			((Marker)target).system = system;
-			((Marker)target).markerTarget = markerTarget;
-			((Marker)target).finished = true;
-			AssetDatabase.SaveAssets();
-			AssetDatabase.Refresh();
-			Debug.Log("Successfully generated Marker!");
-		}
+            // local space
+            Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            Transform chest = animator.GetBoneTransform(HumanBodyBones.Chest);
+            Transform head = animator.GetBoneTransform(HumanBodyBones.Head);
+            Transform neck = animator.GetBoneTransform(HumanBodyBones.Neck);
 
-		private void CheckRequirements()
-		{
-			warnings.Clear();
-			
-			if (descriptor == null)
-				warnings.Add("There is no avatar descriptor on this GameObject. Please move this script onto your avatar, or create an avatar descriptor here.");
-			else
-			{
-				if (descriptor.expressionParameters != null && descriptor.expressionParameters.CalcTotalCost() > (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount))
-				{
-					warnings.Add("You don't have enough free memory in your avatar's Expression Parameters to generate. You need " + (VRCExpressionParameters.MAX_PARAMETER_COST - bitCount) + " or less bits of parameter memory utilized.");
-				}
-				if (descriptor.expressionsMenu != null)
-				{
-					if (descriptor.expressionsMenu.controls.Count == 8)
-					{
-						warnings.Add("Your avatar's topmost menu is full. Please have at least one empty control slot available.");
-					}
-				}
-				
-				if (avatar == null)
-				{
-					warnings.Add("There is no Animator on this avatar. Please add an Animator component on your avatar.");
-				}
-				else if (avatar.avatar == null)
-				{
-					warnings.Add("Please add an avatar in this avatar's Animator component.");
-				}
-				else
-				{
-					if (!avatar.isHuman)
-					{
-						warnings.Add("Please use this script on an avatar with a humanoid rig.");
-					}
-					else
-					{
-						// check avatar is humanoid and layers are valid
-						if (descriptor.baseAnimationLayers.Length < 5) // check all humanoid layers exist (since they can disappear when avatar rig is set human -> generic -> human)
-						{
-							warnings.Add("You are missing the humanoid playable layers in your avatar descriptor. Try clicking 'Reset to Default' in your avatar descriptor.");
-						}
-						else if (!descriptor.baseAnimationLayers[2].isDefault) // check gesture layer validity
-						{
-							if (descriptor.baseAnimationLayers[2].animatorController != null && descriptor.baseAnimationLayers[2].animatorController.name != "")
-							{
-								if (descriptor.baseAnimationLayers[2].animatorController is AnimatorController gesture)
-								{
-									if (gesture.layers[0].avatarMask == null || gesture.layers[0].avatarMask.name == "")
-									{
-										warnings.Add("The first layer of your avatar's gesture layer is missing a mask. Try setting a mask, or using a copy of the VRCSDK gesture controller, or removing the controller from your avatar descriptor.");
-									}
-								}
-								else
-								{
-									warnings.Add("The gesture layer on this avatar is not an animator controller.");
-								}
-							}
-						}
-						// check bones are mapped
-						if (useIndexFinger && ((avatar.GetBoneTransform(HumanBodyBones.LeftIndexDistal) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightIndexDistal) == null)))
-						{
-							warnings.Add("Your avatar rig's left and/or right index finger's distal bone is unmapped!");
-						}
-						if ((avatar.GetBoneTransform(HumanBodyBones.LeftHand) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightHand) == null))
-                        {
-							warnings.Add("Your avatar rig's left and/or right hand is unmapped!");
-						}
-						if (localSpace)
-						{
-							if ((avatar.GetBoneTransform(HumanBodyBones.Hips) == null) || (avatar.GetBoneTransform(HumanBodyBones.Chest) == null) || (avatar.GetBoneTransform(HumanBodyBones.Head) == null) || (avatar.GetBoneTransform(HumanBodyBones.Neck) == null))
-							{
-								warnings.Add("Your avatar rig's hips, chest, neck, and/or head is unmapped!");
-							}
-							if (localSpaceFullBody == 1)
-							{
-								if ((avatar.GetBoneTransform(HumanBodyBones.LeftFoot) == null) || (avatar.GetBoneTransform(HumanBodyBones.RightFoot) == null))
-								{
-									warnings.Add("Your avatar rig's left and/or right foot is unmapped!");
-								}
-							}
-						}
-					}
-				}
-			}	
-		}
+            // local space fbt
+            Transform leftFoot = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+            Transform rightFoot = animator.GetBoneTransform(HumanBodyBones.RightFoot);
 
-		private int GetBitCount()
-		{
-			bitCount = 12; // M_Marker, M_Clear, M_Eraser, and M_Menu are bools(1+1+1+1); M_Color is a float(+8). always included
-			if (brushSize) // float
-				bitCount += 8;
-			if (eraserSize) // float
-				bitCount += 8;
-			if (localSpace) // int
-				bitCount += 8;
-			else // bool
-				bitCount += 1;
-			return bitCount;
-		}
+            if (useIndexFinger)
+            {
+                if (leftIndex == null)
+                    warnings.Add("Your avatar rig's left index finger's last bone is unmapped!");
+                if (rightIndex == null)
+                    warnings.Add("Your avatar rig's right index finger's last bone is unmapped!");
+            }
+            else
+            {
+                if (leftHand == null)
+                    warnings.Add("Your avatar rig's left hand is unmapped!");
+                if (rightHand == null)
+                    warnings.Add("Your avatar rig's right hand is unmapped!");
+            }
 
-		private void ChangeGestureCondition(AnimatorController controller, int layerToModify, int newGesture)
-		{   // helper function: change gesture condition, in all transitions of 1 layer of controller
-			AnimatorStateTransition[] transitions = controller.layers[layerToModify].stateMachine.states.SelectMany(x => x.state.transitions).ToArray();
-			AnimatorCondition[] conditions;
-			for (int i = 0; i < transitions.Length; i++)
-			{
-				conditions = transitions[i].conditions;
-				for (int j = 0; j < conditions.Length; j++)
-				{
-					if (conditions[j].parameter.Contains("Gesture"))
-					{
-						AnimatorCondition conditionToRemove = conditions[j];
-						transitions[i].RemoveCondition(conditionToRemove);
-						transitions[i].AddCondition(conditionToRemove.mode, newGesture, conditionToRemove.parameter);
-						break; // in my case, only one condition per transition includes GestureLeft / GestureRight
-					}
-				}
-			}
-		}
-	}
+            if(localSpace && !marker.isQuest) {
+                if(hips == null)
+                    warnings.Add("Your avatar rig's hips are unmapped!");
+                if(chest == null)
+                    warnings.Add("Your avatar rig's chest is unmapped!");
+                if(head == null)
+                    warnings.Add("Your avatar rig's head is unmapped!");
+                if(neck == null)
+                    warnings.Add("Your avatar rig's neck is unmapped!");
+
+                if(localSpaceFullBody == 1) {
+                    if(leftFoot == null)
+                        warnings.Add("Your avatar rig's left foot is unmapped!");
+                    if(rightFoot == null)
+                        warnings.Add("Your avatar rig's right foot is unmapped!");
+                }
+            }
+        }
+
+        int GetBitCount()
+        {
+            // PC: M_Marker, M_Clear, M_Eraser, and M_Menu are bools(1+1+1+1); M_Color is a float(+8). always included
+            // Quest: M_Marker, M_Color
+            bitCount = marker.isQuest ? 9 : 12;
+
+            if (!marker.isQuest)
+            {
+                if (brushSize && !marker.isQuest) // float
+                    bitCount += 8;
+                if (separateEraserScaling && !marker.isQuest) // float
+                    bitCount += 8;
+                if (localSpace && !marker.isQuest) // int
+                    bitCount += 8;
+                if (withMenu && !marker.isQuest) // bools
+                    bitCount += 4;
+                else // bool
+                    bitCount += 1;
+            }
+
+            return bitCount;
+        }
+    }
 }
 #endif

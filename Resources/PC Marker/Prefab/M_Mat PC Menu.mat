@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_Mat PC Menu
+  m_Shader: {fileID: 4800000, guid: 307331b28c6788543aeed00868ff90cb, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 0
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _SpriteSheet:
+        m_Texture: {fileID: 2800000, guid: 4038eea094c413e4195c2459b5a0d45b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord2:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ClearSelected: 0
+    - _ColorSelected: 0
+    - _Cutoff: 0.9
+    - _EraserSelected: 0
+    - _Float0: 0
+    - _Float1: 0
+    - _Float3: 0
+    - _Loading: 0
+    - _PenSelected: 0
+    - _SizeSelected: 0
+    - _SliderValue: 0.569
+    - _Space1Selected: 0
+    - _Space2Selected: 0
+    - _Space3Selected: 0
+    - _Space4Selected: 0
+    - _Space5Selected: 0
+    - _Space6Selected: 0
+    - _Space7Selected: 0
+    - _Space8Selected: 0
+    - _SpaceSelected: 0
+    - __dirty: 0
+    - _offset: 0.02
+    m_Colors:
+    - _BackgroundColor: {r: 0.37735817, g: 0.37735817, b: 0.37735817, a: 0}
+    - _LoadingBarColor: {r: 1, g: 0, b: 0, a: 1}
+    - _SelectedColor: {r: 0, g: 1, b: 0.71902657, a: 1}
+    - _SliderBackgroundColor: {r: 0.35849032, g: 0.35849032, b: 0.35849032, a: 1}
+    - _SliderCircleColor: {r: 0, g: 1, b: 0.9525311, a: 0}
+    - _SliderColor: {r: 0.37201852, g: 0.8301887, b: 0.4226303, a: 0}
+    - _SliderForegroundColor: {r: 0.5294118, g: 0.5294118, b: 0.5294118, a: 1}
+  m_BuildTextureStacks: []

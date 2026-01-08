@@ -47,7 +47,10 @@ Click "Finish Setup" to finalize your marker and remove the script from your ava
 
 ## Contributors
 
-[ksivl](https://github.com/ksivl)
+* [ksivl](https://github.com/ksivl)
+* [TohruTheDragon](https://github.com/fkrisi11)
+* [jellejurre](https://github.com/jellejurre)
+* [Cam](https://camsavis.store/)
 
 ## License
 
