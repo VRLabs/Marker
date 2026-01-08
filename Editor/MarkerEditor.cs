@@ -522,7 +522,7 @@ namespace VRLabs.Marker
 
                 // "Remove" button
                 bool hasPCInstall = ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedPC, "M_", "Marker");
-                bool hasQuestInstall = ScriptFunctions.HasPreviousInstall(descriptor, string.Empty, playablesUsedQuest, "M_", "Marker");
+                bool hasQuestInstall = ScriptFunctions.HasPreviousInstall(descriptor, "Marker", playablesUsedQuest, "M_", "Marker");
                 using (new EditorGUI.DisabledGroupScope(!(hasPCInstall || hasQuestInstall)))
                 {
                     if (GUILayout.Button("Remove Marker", buttonStyle))
