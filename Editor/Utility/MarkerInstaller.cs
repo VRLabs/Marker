@@ -538,13 +538,8 @@ namespace VRLabs.Marker
             Transform lowerArmLeft = avatar.GetBoneTransform(HumanBodyBones.LeftLowerArm);
             Transform lowerArmRight = avatar.GetBoneTransform(HumanBodyBones.RightLowerArm);
 
-            menuTargetLeft.SetParent(lowerArmLeft, worldPositionStays: true);
-            menuTargetLeft.localPosition = Vector3.zero;
-            menuTargetLeft.localRotation = Quaternion.Euler(270f, 0f, 0f);
-
-            menuTargetRight.SetParent(lowerArmRight, worldPositionStays: true);
-            menuTargetRight.localPosition = Vector3.zero;
-            menuTargetRight.localRotation = Quaternion.Euler(270f, 180f, 0f);
+            AlignMenu(avatar, lowerArmLeft, menuTargetLeft, isLeft: true);
+            AlignMenu(avatar, lowerArmRight, menuTargetRight, isLeft: false);
 
             HumanBodyBones[] bones = {
                 HumanBodyBones.Hips, HumanBodyBones.Chest, HumanBodyBones.Head,
@@ -700,6 +695,30 @@ namespace VRLabs.Marker
                 {
                     menuMesh.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(MarkerStaticResources.MarkerNoSizeMaterial));
                 }
+            }
+        }
+
+        static void AlignMenu(Animator avatar, Transform bone, Transform menuTarget, bool isLeft)
+        {
+            Transform hand = avatar.GetBoneTransform(isLeft ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand);
+
+            Vector3 toHand = (hand.position - bone.position).normalized;
+
+            Vector3 avatarForward = avatar.transform.forward;
+            Vector3 worldSide = Vector3.Cross(toHand, avatarForward).normalized;
+            Vector3 worldUp = Vector3.Cross(worldSide, toHand).normalized;
+
+            Quaternion flatRotation = Quaternion.LookRotation(toHand, worldUp);
+
+            menuTarget.SetParent(bone, worldPositionStays: true);
+            menuTarget.localPosition = Vector3.zero;
+            menuTarget.rotation = flatRotation;
+
+            menuTarget.Rotate(new Vector3(0, 0, 90),Space.Self);
+
+            if (isLeft)
+            {
+                menuTarget.localRotation *= Quaternion.Euler(0, 180, 0);
             }
         }
 
@@ -881,6 +900,7 @@ namespace VRLabs.Marker
             }
 
             EditorUtility.SetDirty(markerMenu);
+            EditorUtility.SetDirty(optionsMenu);
 
             VRCExpressionsMenu.Control.Parameter pm_menu = new VRCExpressionsMenu.Control.Parameter();
             Texture2D markerIcon = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath("d7f5ccd8035dd4d4d9f80706d359fdfa"), typeof(Texture2D)) as Texture2D;
