@@ -7945,7 +7945,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 2
   moveWithCustomTransform: {fileID: 3255749056750560803}
-  scalingMode: 0
+  scalingMode: 1
   randomSeed: 0
   InitialModule:
     serializedVersion: 3
@@ -8760,7 +8760,7 @@ ParticleSystem:
     rateOverDistance:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 300
+      scalar: 500
       minScalar: 0
       maxCurve:
         serializedVersion: 2
