@@ -919,8 +919,19 @@ namespace VRLabs.Marker
 
                         StopAnimationPreview();
 
-                        DestroyImmediate(((Marker)target));
-                        DestroyImmediate(this);
+
+                        if (marker.gameObject.CompareTag("EditorOnly") &&
+                            marker.gameObject.name == "Marker Installer" &&
+                            marker.transform.childCount == 0)
+                        {
+                            GameObject.DestroyImmediate(marker.gameObject);
+                        }
+                        else
+                        {
+                            DestroyImmediate(((Marker)target));
+                            DestroyImmediate(this);
+                        }
+
                         // end script
                     }
                 }
