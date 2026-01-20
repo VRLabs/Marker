@@ -30,7 +30,7 @@ The "Draw" particle system emits particles for drawing. The "Eraser" collider ki
 
 ## Install guide
 
-https://user-images.githubusercontent.com/45078979/148662754-c6b64c0f-690f-495f-b012-f7da803c393e.mp4
+https://github.com/user-attachments/assets/715572a4-8efc-4077-a2f7-8595a8d92605
 
 Drag the Marker.cs script onto your avatar. You can customize settings for installing the marker. Some settings have tooltips for explanation.
 
