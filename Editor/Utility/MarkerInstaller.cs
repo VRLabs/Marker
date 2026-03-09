@@ -278,7 +278,11 @@ namespace VRLabs.Marker
                 ScriptFunctions.RemoveParameter(controller, "VRLabs/Marker/InteractAll");
             }
 
-            if (controller) EditorUtility.SetDirty(controller);
+            if (controller && marker.wdSetting)
+            {
+                ScriptFunctions.SetWriteDefaults(controller);
+                EditorUtility.SetDirty(controller);
+            }
 
             return controller;
         }
@@ -308,6 +312,12 @@ namespace VRLabs.Marker
                         controller.RemoveLayer(0);
                     }
                 }
+            }
+
+            if (controller && marker.wdSetting)
+            {
+                ScriptFunctions.SetWriteDefaults(controller);
+                EditorUtility.SetDirty(controller);
             }
 
             ScriptFunctions.MergeController(newfx, controller, directory);
